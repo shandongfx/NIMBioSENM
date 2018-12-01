@@ -1,0 +1,110 @@
+---
+source: Rmd
+title: "occurrence data"
+teaching: 10
+exercises: 5
+
+objectives:
+- "Download occurrence data through API."
+- "Filter occurrance data."
+
+---
+
+## 2 Occurrence data  
+#### 2.1 Download occurrence data  
+
+(fix me) add a decription about biodiversity databases; a figure about GBIF; a list of databases; what is api;
+
+For our example, we download occurrence data for the nine-banded armadillo from GBIF.org (Global Biodiversity Information Facility). 
+
+#####Thread 6
+```{r prepare, message=TRUE, warning=FALSE}
+require(jsonlite)				 
+occ_raw <- gbif(genus="Dasypus",species="novemcinctus")
+save(occ_raw,file = "data/occ_raw")
+write.csv("data/occ_raw.csv")
+
+
+# to view the first few lines of the occurrence dataset use:
+# head( occ_raw )
+```
+
+####2.2.2 Clean occurrence data
+Since some of our records do not have appropriate coordinates and some have missing locational data, we need to remove them from our dataset. To do this, we created a new dataset named “occ_clean”, which is a subset of the “occ_raw” dataset where records with missing latitude and/or longitude are removed. This particular piece of code also returns the number of records that are removed from the dataset. Additionally, we remove duplicate records and create a subset of the cleaned data with the duplicates removed. 
+
+#####Thread 7: remove data without coordinates, remove duplicated coordinates, keep only occurence data associated with an actulal specimen, and limit the temporal range of data
+```{r clean_data1}
+# here we remove erroneous coordinates, where either the latitude or longitude is missing
+occ_clean <- subset(occ_raw,(!is.na(lat))&(!is.na(lon))) 
+#  "!" means the opposite logic value
+cat(nrow(occ_raw)-nrow(occ_clean), "records are removed")
+
+# remove duplicated data based on latitude and longitude
+dups <- duplicated(occ_clean[c("lat","lon")])
+occ_unique <- occ_clean[!dups,]
+cat(nrow(occ_clean)-nrow(occ_unique), "records are removed")
+
+# only keep record that are associted with a specimen
+table(occ_unique$basisOfRecord)
+occ_unique <- subset(occ_unique, basisOfRecord=="PRESERVED_SPECIMEN")
+table(occ_unique$basisOfRecord)
+
+# to filter the species records by year, in this example 1950 to present:
+# shows frequency of records based on year
+table(occ_unique$year)
+# show histogram of records based on year
+hist(occ_unique$year)
+# subset the record that have a collection date of 1950 to present
+occ_unique <- subset(occ_unique, year>=1950)
+
+```
+
+Up to this point we have been working with a data frame, but it has no spatial relationship with environmental layers. So we need to make the data spatial. Once our data is spatial we can use the *plot* function to see the occurrence data and allow us to check for data points that appear to be erroneous.
+
+#####Thread 8: make occ spatial, assign coordinate reference system to *spatial points*
+```{r clean_data2}
+# make occ spatial
+coordinates(occ_unique) <- ~ lon + lat
+
+# Define the coordinate system that will be used. Here we show several examples:
+myCRS1 <- CRS("+init=epsg:4326") # WGS 84
+#myCRS2 <- CRS("+init=epsg:4269") # NAD 83
+#myCRS3 <- CRS("+init=epsg:3857") # Mercator
+
+# full reference list can be found here http://spatialreference.org/ref/
+
+# add Coordinate Reference System (CRS) projection. 
+crs(occ_unique) <- myCRS1
+plot(occ_unique)
+
+## look for erroneous points
+# Here we add the first layer of the bioclim variables as a reference 
+plot(clim[[1]])
+
+# We then plot the occurence data to see if any occurence locations fall within inapproprite areas (i.e terrestrial species in the ocean)
+plot(occ_unique,add=TRUE)
+```							   
+
+> ## Challenge: check if packages are setup?
+> > ## Solution
+> > Run a simple Maxent model from R terminal:
+> > ```{r check_setups, echo=TRUE,eval=FALSE}
+> > # get predictor variables
+> > fnames <- list.files(path=paste(system.file(package="dismo"), '/ex', sep=''),
+> >               pattern='grd', full.names=TRUE )
+> > predictors <- stack(fnames)
+> > # file with presence points
+> > occurence <- paste(system.file(package="dismo"), '/ex/bradypus.csv', sep='')
+> > occ <- read.table(occurence, header=TRUE, sep=',')[,-1]
+> > # witholding a 20% sample for testing
+> > fold <- kfold(occ, k=5)
+> > occtest <- occ[fold == 1, ]
+> > occtrain <- occ[fold != 1, ]
+> > # fit model, biome is a categorical variable
+> > me <- maxent(predictors, occtrain, factors='biome')
+> > # see the maxent results in a browser:
+> > me
+> > ```
+> {: .solution}
+{: .challenge}
+{% include links.md %}

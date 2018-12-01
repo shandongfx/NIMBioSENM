@@ -17,73 +17,73 @@ objectives:
 
 For our example, we download occurrence data for the nine-banded armadillo from GBIF.org (Global Biodiversity Information Facility). 
 
+```{r load pk,message=FALSE,warning=FALSE}
+library("raster")
+library("dismo")
+library("rgeos")
+library("rgdal")
+library("sp")
+library("ENMeval")
+```
+
 #####Thread 6
-```{r prepare, message=TRUE, warning=FALSE}
-require(jsonlite)				 
-occ_raw <- gbif(genus="Dasypus",species="novemcinctus")
-save(occ_raw,file = "data/occ_raw")
-write.csv("data/occ_raw.csv")
+```{r prepare, message=FALSE, warning=FALSE}
+require(jsonlite)
 
+# gbif is a function in dismo package, which directly download occurrences through GBIF api
+gbif(genus="Dasypus",species="novemcinctus",download=FALSE)
 
-# to view the first few lines of the occurrence dataset use:
-# head( occ_raw )
+# download the first 1000 record ()
+occ_raw <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE,
+                start=1,end=100) # the default is to download all
+#save(occ_raw,file = "data/occ_raw")
+#write.csv("data/occ_raw.csv")
+
+# to view the first few records the occurrence dataset use:
+#head( occ_raw )
 ```
 
-####2.2.2 Clean occurrence data
-Since some of our records do not have appropriate coordinates and some have missing locational data, we need to remove them from our dataset. To do this, we created a new dataset named “occ_clean”, which is a subset of the “occ_raw” dataset where records with missing latitude and/or longitude are removed. This particular piece of code also returns the number of records that are removed from the dataset. Additionally, we remove duplicate records and create a subset of the cleaned data with the duplicates removed. 
 
-#####Thread 7: remove data without coordinates, remove duplicated coordinates, keep only occurence data associated with an actulal specimen, and limit the temporal range of data
-```{r clean_data1}
-# here we remove erroneous coordinates, where either the latitude or longitude is missing
-occ_clean <- subset(occ_raw,(!is.na(lat))&(!is.na(lon))) 
-#  "!" means the opposite logic value
-cat(nrow(occ_raw)-nrow(occ_clean), "records are removed")
+(fix me) add a list of packages and biodiversity databases;  
+| database | R package |  
+| -------- | --------- |   
+| BIEN | [BIEN](https://cran.r-project.org/web/packages/BIEN/vignettes/BIEN_tutorial.html) |  
+| BISON | [rbison](~~~~~~~~add link here) |  
+| eBird | [rebird]() |  
+| GBIF |[rgbif]()|
+| iNaturalist | [rinat]() |
+| VertNet | [rvertnet]() |
+| iDigBio  | [ridigbio]() |  
 
-# remove duplicated data based on latitude and longitude
-dups <- duplicated(occ_clean[c("lat","lon")])
-occ_unique <- occ_clean[!dups,]
-cat(nrow(occ_clean)-nrow(occ_unique), "records are removed")
+| database        | R package           |
+| ------------- |-------------|  
+| BIEN | [BIEN](https://cran.r-project.org/web/packages/BIEN/vignettes/BIEN_tutorial.html) |  
+| BISON | [rbison](~~~~~~~~add link here) |  
+| eBird | [rebird]() |  
+| GBIF |[rgbif]()|
+| iNaturalist | [rinat]() |
+| VertNet | [rvertnet]() |
+| iDigBio  | [ridigbio]() | 
 
-# only keep record that are associted with a specimen
-table(occ_unique$basisOfRecord)
-occ_unique <- subset(occ_unique, basisOfRecord=="PRESERVED_SPECIMEN")
-table(occ_unique$basisOfRecord)
 
-# to filter the species records by year, in this example 1950 to present:
-# shows frequency of records based on year
-table(occ_unique$year)
-# show histogram of records based on year
-hist(occ_unique$year)
-# subset the record that have a collection date of 1950 to present
-occ_unique <- subset(occ_unique, year>=1950)
 
-```
+| Tables        | Are           | Cool  |
+| ------------- |:-------------:| -----:|
+| col 3 is      | right-aligned | $1600 |
+| col 2 is      | centered      |   $12 |
+| zebra stripes | are neat      |    $1 |
 
-Up to this point we have been working with a data frame, but it has no spatial relationship with environmental layers. So we need to make the data spatial. Once our data is spatial we can use the *plot* function to see the occurrence data and allow us to check for data points that appear to be erroneous.
 
-#####Thread 8: make occ spatial, assign coordinate reference system to *spatial points*
-```{r clean_data2}
-# make occ spatial
-coordinates(occ_unique) <- ~ lon + lat
 
-# Define the coordinate system that will be used. Here we show several examples:
-myCRS1 <- CRS("+init=epsg:4326") # WGS 84
-#myCRS2 <- CRS("+init=epsg:4269") # NAD 83
-#myCRS3 <- CRS("+init=epsg:3857") # Mercator
+(fix me) the great thing is, you could query many databases at one time:  
+spocc package  
+developed by *rOpenSci*  
 
-# full reference list can be found here http://spatialreference.org/ref/
+https://github.com/ropensci/spocc  
+https://ropensci.github.io/spocc/  
 
-# add Coordinate Reference System (CRS) projection. 
-crs(occ_unique) <- myCRS1
-plot(occ_unique)
 
-## look for erroneous points
-# Here we add the first layer of the bioclim variables as a reference 
-plot(clim[[1]])
 
-# We then plot the occurence data to see if any occurence locations fall within inapproprite areas (i.e terrestrial species in the ocean)
-plot(occ_unique,add=TRUE)
-```							   
 
 > ## Challenge: check if packages are setup?
 > > ## Solution

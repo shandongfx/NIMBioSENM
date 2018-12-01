@@ -19,209 +19,81 @@ objectives:
 
 For our example, we download occurrence data for the nine-banded armadillo from GBIF.org (Global Biodiversity Information Facility). 
 
+
+```r
+library("raster")
+library("dismo")
+library("rgeos")
+library("rgdal")
+library("sp")
+library("ENMeval")
+```
+
 #####Thread 6
 
 ```r
-require(jsonlite)				 
+require(jsonlite)
+
+# gbif is a function in dismo package, which directly download occurrences through GBIF api
+gbif(genus="Dasypus",species="novemcinctus",download=FALSE)
 ```
 
 ```
-## Loading required package: jsonlite
-```
-
-```r
-occ_raw <- gbif(genus="Dasypus",species="novemcinctus")
-```
-
-```
-## Error in gbif(genus = "Dasypus", species = "novemcinctus"): could not find function "gbif"
+## [1] 7508
 ```
 
 ```r
-save(occ_raw,file = "data/occ_raw")
+# download the first 1000 record ()
+occ_raw <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE,
+                start=1,end=1000) # the default is to download all
+#save(occ_raw,file = "data/occ_raw")
+#write.csv("data/occ_raw.csv")
+
+# to view the first few records the occurrence dataset use:
+#head( occ_raw )
 ```
 
-```
-## Error in save(occ_raw, file = "data/occ_raw"): object 'occ_raw' not found
-```
 
-```r
-write.csv("data/occ_raw.csv")
-```
+(fix me) add a list of packages and biodiversity databases;  
+| database | R package |  
+| -------- | --------- |   
+| BIEN | [BIEN](https://cran.r-project.org/web/packages/BIEN/vignettes/BIEN_tutorial.html) |  
+| BISON | [rbison](~~~~~~~~add link here) |  
+| eBird | [rebird]() |  
+| GBIF |[rgbif]()|
+| iNaturalist | [rinat]() |
+| VertNet | [rvertnet]() |
+| iDigBio  | [ridigbio]() |  
 
-```
-## "","x"
-## "1","data/occ_raw.csv"
-```
+| database        | R package           |
+| ------------- |-------------|  
+| BIEN | [BIEN](https://cran.r-project.org/web/packages/BIEN/vignettes/BIEN_tutorial.html) |  
+| BISON | [rbison](~~~~~~~~add link here) |  
+| eBird | [rebird]() |  
+| GBIF |[rgbif]()|
+| iNaturalist | [rinat]() |
+| VertNet | [rvertnet]() |
+| iDigBio  | [ridigbio]() | 
 
-```r
-# to view the first few lines of the occurrence dataset use:
-# head( occ_raw )
-```
 
-####2.2.2 Clean occurrence data
-Since some of our records do not have appropriate coordinates and some have missing locational data, we need to remove them from our dataset. To do this, we created a new dataset named “occ_clean”, which is a subset of the “occ_raw” dataset where records with missing latitude and/or longitude are removed. This particular piece of code also returns the number of records that are removed from the dataset. Additionally, we remove duplicate records and create a subset of the cleaned data with the duplicates removed. 
 
-#####Thread 7: remove data without coordinates, remove duplicated coordinates, keep only occurence data associated with an actulal specimen, and limit the temporal range of data
+| Tables        | Are           | Cool  |
+| ------------- |:-------------:| -----:|
+| col 3 is      | right-aligned | $1600 |
+| col 2 is      | centered      |   $12 |
+| zebra stripes | are neat      |    $1 |
 
-```r
-# here we remove erroneous coordinates, where either the latitude or longitude is missing
-occ_clean <- subset(occ_raw,(!is.na(lat))&(!is.na(lon))) 
-```
 
-```
-## Error in subset(occ_raw, (!is.na(lat)) & (!is.na(lon))): object 'occ_raw' not found
-```
 
-```r
-#  "!" means the opposite logic value
-cat(nrow(occ_raw)-nrow(occ_clean), "records are removed")
-```
+(fix me) the great thing is, you could query many databases at one time:  
+spocc package  
+developed by *rOpenSci*  
 
-```
-## Error in nrow(occ_raw): object 'occ_raw' not found
-```
+https://github.com/ropensci/spocc  
+https://ropensci.github.io/spocc/  
 
-```r
-# remove duplicated data based on latitude and longitude
-dups <- duplicated(occ_clean[c("lat","lon")])
-```
 
-```
-## Error in duplicated(occ_clean[c("lat", "lon")]): object 'occ_clean' not found
-```
 
-```r
-occ_unique <- occ_clean[!dups,]
-```
-
-```
-## Error in eval(expr, envir, enclos): object 'occ_clean' not found
-```
-
-```r
-cat(nrow(occ_clean)-nrow(occ_unique), "records are removed")
-```
-
-```
-## Error in nrow(occ_clean): object 'occ_clean' not found
-```
-
-```r
-# only keep record that are associted with a specimen
-table(occ_unique$basisOfRecord)
-```
-
-```
-## Error in table(occ_unique$basisOfRecord): object 'occ_unique' not found
-```
-
-```r
-occ_unique <- subset(occ_unique, basisOfRecord=="PRESERVED_SPECIMEN")
-```
-
-```
-## Error in subset(occ_unique, basisOfRecord == "PRESERVED_SPECIMEN"): object 'occ_unique' not found
-```
-
-```r
-table(occ_unique$basisOfRecord)
-```
-
-```
-## Error in table(occ_unique$basisOfRecord): object 'occ_unique' not found
-```
-
-```r
-# to filter the species records by year, in this example 1950 to present:
-# shows frequency of records based on year
-table(occ_unique$year)
-```
-
-```
-## Error in table(occ_unique$year): object 'occ_unique' not found
-```
-
-```r
-# show histogram of records based on year
-hist(occ_unique$year)
-```
-
-```
-## Error in hist(occ_unique$year): object 'occ_unique' not found
-```
-
-```r
-# subset the record that have a collection date of 1950 to present
-occ_unique <- subset(occ_unique, year>=1950)
-```
-
-```
-## Error in subset(occ_unique, year >= 1950): object 'occ_unique' not found
-```
-
-Up to this point we have been working with a data frame, but it has no spatial relationship with environmental layers. So we need to make the data spatial. Once our data is spatial we can use the *plot* function to see the occurrence data and allow us to check for data points that appear to be erroneous.
-
-#####Thread 8: make occ spatial, assign coordinate reference system to *spatial points*
-
-```r
-# make occ spatial
-coordinates(occ_unique) <- ~ lon + lat
-```
-
-```
-## Error in coordinates(occ_unique) <- ~lon + lat: object 'occ_unique' not found
-```
-
-```r
-# Define the coordinate system that will be used. Here we show several examples:
-myCRS1 <- CRS("+init=epsg:4326") # WGS 84
-```
-
-```
-## Error in CRS("+init=epsg:4326"): could not find function "CRS"
-```
-
-```r
-#myCRS2 <- CRS("+init=epsg:4269") # NAD 83
-#myCRS3 <- CRS("+init=epsg:3857") # Mercator
-
-# full reference list can be found here http://spatialreference.org/ref/
-
-# add Coordinate Reference System (CRS) projection. 
-crs(occ_unique) <- myCRS1
-```
-
-```
-## Error in eval(expr, envir, enclos): object 'myCRS1' not found
-```
-
-```r
-plot(occ_unique)
-```
-
-```
-## Error in plot(occ_unique): object 'occ_unique' not found
-```
-
-```r
-## look for erroneous points
-# Here we add the first layer of the bioclim variables as a reference 
-plot(clim[[1]])
-```
-
-```
-## Error in plot(clim[[1]]): object 'clim' not found
-```
-
-```r
-# We then plot the occurence data to see if any occurence locations fall within inapproprite areas (i.e terrestrial species in the ocean)
-plot(occ_unique,add=TRUE)
-```
-
-```
-## Error in plot(occ_unique, add = TRUE): object 'occ_unique' not found
-```
 
 > ## Challenge: check if packages are setup?
 > > ## Solution

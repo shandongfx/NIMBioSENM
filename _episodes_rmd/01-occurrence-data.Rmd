@@ -1,16 +1,21 @@
 ---
 source: Rmd
-title: "occurrence data"
+title: "Occurrence data"
 teaching: 10
 exercises: 5
-
+questions:
+- "11111111111"
 objectives:
 - "Download occurrence data through API."
 - "Filter occurrance data."
-
+keypoints:
+- "111111"
+- "22222"
 ---
 
 ```{r load pk,message=FALSE,warning=FALSE,echo=FALSE}
+source("../bin/chunk-options.R")
+
 # not for shown
 library("raster")
 library("dismo")
@@ -18,7 +23,7 @@ library("rgeos")
 library("rgdal")
 library("sp")
 library("ENMeval")
-library(ggplot2)
+library("ggplot2")
 
 if(file.exists("data/occ_raw.rdata")){
   load("data/occ_raw.rdata")
@@ -62,7 +67,7 @@ Table 1. List of biodiversity databases and their R package.
  VertNet | [rvertnet](https://github.com/ropensci/rvertnet)
  iDigBio  | [ridigbio](https://www.idigbio.org/)  
    
-The great thing is, you could query many databases at one time using [spocc](https://github.com/ropensci/spocc) package, developed by [*rOpenSci*](https://ropensci.org/packages/)![]({{ page.root }}/figure/ropensci.png).  
+The great thing is, you could query many databases at one time using [spocc](https://github.com/ropensci/spocc) package, developed by [*rOpenSci*](https://ropensci.org/packages/)
 
 #### 2.3 occurrence data in Darwin Core  
 Take a look at the columns of the GBIF occurrences.
@@ -114,8 +119,8 @@ cat(nrow(occ_unique_specimen), "out of ", nrow(occ_unique), "records are specime
 ```
 
 show the histogram of "year"
-```{r clean_data5}
-#plot(  hist(occ_unique_specimen$year) )
+```{r clean_data5,fig.height = 6, fig.width = 6, fig.align = "center"}
+hist(occ_unique_specimen$year)
 #ggplot2()
 ```
 
@@ -130,43 +135,9 @@ show a quick summary of years in the data
 summary(occ_unique_specimen_present$year)
 ```
 
-```{r test raster}
-f <- system.file("external/test.grd", package="raster")
-f
-r <- raster(f)
-plot(r)
-logo <- raster(system.file("external/rlogo.grd", package="raster")) 
-plot(logo)
 
-#from scratch
-r1 <- raster(nrows=108, ncols=21, xmn=0, xmx=10)
-plot(r1)
-#from an Extent object
-e <- extent(r)
-r2 <- raster(e)
 
-#from another Raster* object
-r3 <- raster(r)
-s <- stack(r, r, r)
-r4 <- raster(s)
-r5 <- raster(s, 3)
-```
 
-```{r test pplot}
-df <- data.frame(
-  gp = factor(rep(letters[1:3], each = 10)),
-  y = rnorm(30)
-)
-ds <- plyr::ddply(df, "gp", plyr::summarise, mean = mean(y), sd = sd(y))
-
-# The summary data frame ds is used to plot larger red points on top
-# of the raw data. Note that we don't need to supply `data` or `mapping`
-# in each layer because the defaults from ggplot() are used.
-ggplot(df, aes(gp, y)) +
-  geom_point() +
-  geom_point(data = ds, aes(y = mean), colour = 'red', size = 3)
-
-```
 
 > ## Challenge: Download occurrences from GBIF and filter data
 > select your favorite species  

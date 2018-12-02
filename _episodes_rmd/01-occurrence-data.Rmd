@@ -127,15 +127,13 @@ hist(occ_unique_specimen$year)
 
 to filter the species records by year, in this example 1950 to 2000:
 ```{r clean_data6}
-occ_unique_specimen_present <- subset(occ_unique_specimen, year>=1950 & year <=2000)
+occ_final <- subset(occ_unique_specimen, year>=1950 & year <=2000)
 ```
 
 show a quick summary of years in the data
 ```{r clean_data7}
-summary(occ_unique_specimen_present$year)
+summary(occ_final$year)
 ```
-
-
 
 
 
@@ -159,4 +157,66 @@ summary(occ_unique_specimen_present$year)
 > > ```
 > {: .solution}
 {: .challenge}
+
+#### 2.5 make occurrence data **spatial**
+make occ spatial, assign coordinate reference system to *spatial points*
+```{r occ-spatial1}
+occ_final_COPY <- occ_final
+coordinates(occ_final) <- ~ lon + lat
+
+```
+
+Note that, after make the dataframe spatial, the dataframe object is transformed into a spatial object
+```{r occ-spatial2}
+cat("the previous object is: ", class(occ_final_COPY),"\n")  
+cat("the new object is: ",class(occ_final),"\n" )
+```
+
+we could view the coordinates and the data that are associated with the spatial object
+```{r occ-spatial2.1}
+head(occ_final@coords)
+head(occ_final@data)
+
+```
+
+read the CRS of the spatial object; it is `NA` because it has not been defined.
+```{r occ-spatial3}
+crs(occ_final)
+```
+
+now we define a CRS object
+```{r occ-spatial4}
+# Define the coordinate system that will be used. Here we show several examples:
+myCRS1 <- CRS("+init=epsg:4326") # WGS 84
+myCRS2 <- CRS("+init=epsg:4269") # NAD 83
+myCRS3 <- CRS("+init=epsg:3857") # Mercator
+myCRS3 <- CRS("+init=epsg:3413") # WGS 84 / NSIDC Sea Ice Polar Stereographic North
+```
+You can full reference list from [spatialreference.org website](http://spatialreference.org/ref/).  
+![]({{ page.root }}/fig/crslist.png).  
+ 
+assign the Coordinate Reference System (CRS) to our occ spatial object 
+```{r occ-spatial5}
+crs(occ_final) <- myCRS1
+crs(occ_final)
+```
+
+after defineing the CRS, we can do CRS projecitons
+```{r occ-spatial6}
+occ_final_projected <- spTransform(occ_final, myCRS3)
+plot(occ_final)
+plot(occ_final_projected)
+```
+after we transform a dataframe into a spatial object, we can still subset it by column; for example, here we only keep occurrences north of the Equator  
+```{r occ-spatial7}
+occ_north <- subset(occ_final, occ_final@coords[,2] >=0)
+plot(occ_north)
+```
+or we can subset by year
+```{r occ-spatial8}
+occ_1990 <- subset(occ_final, year ==1990)
+plot(occ_1990)
+```
+
+
 {% include links.md %}

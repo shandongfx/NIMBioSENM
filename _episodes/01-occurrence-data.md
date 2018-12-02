@@ -12,29 +12,16 @@ objectives:
 
 ---
 
+
+
 ## 2 Occurrence data  
 #### 2.1 Download occurrence data  
 
-(fix me) add a decription about biodiversity databases; a figure about GBIF; a list of databases; what is api;
+(fix me) add a decription about biodiversity databases; a figure about GBIF; a list of databases; what is api;  
 
-For our example, we download occurrence data for the nine-banded armadillo from GBIF.org (Global Biodiversity Information Facility). 
-
-
-```r
-library("raster")
-library("dismo")
-library("rgeos")
-library("rgdal")
-library("sp")
-library("ENMeval")
-```
-
-#####Thread 6
+`gbif()` is a function in `dismo` package, which can directly download occurrences through GBIF api; here we query the number of records of the nine-banded armadillo, **without downloading**  
 
 ```r
-require(jsonlite)
-
-# gbif is a function in dismo package, which directly download occurrences through GBIF api
 gbif(genus="Dasypus",species="novemcinctus",download=FALSE)
 ```
 
@@ -42,79 +29,391 @@ gbif(genus="Dasypus",species="novemcinctus",download=FALSE)
 ## [1] 7508
 ```
 
+by setting `download=TRUE`, we can download all records  
+
 ```r
-# download the first 1000 record ()
-occ_raw <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE,
-                start=1,end=1000) # the default is to download all
-#save(occ_raw,file = "data/occ_raw")
-#write.csv("data/occ_raw.csv")
+occ_raw <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE) 
 
 # to view the first few records the occurrence dataset use:
 #head( occ_raw )
 ```
 
 
-(fix me) add a list of packages and biodiversity databases;  
-| database | R package |  
-| -------- | --------- |   
-| BIEN | [BIEN](https://cran.r-project.org/web/packages/BIEN/vignettes/BIEN_tutorial.html) |  
-| BISON | [rbison](~~~~~~~~add link here) |  
-| eBird | [rebird]() |  
-| GBIF |[rgbif]()|
-| iNaturalist | [rinat]() |
-| VertNet | [rvertnet]() |
-| iDigBio  | [ridigbio]() |  
+#### 2.2 List of biodiversity databases and their R package.  
 
-| database        | R package           |
-| ------------- |-------------|  
-| BIEN | [BIEN](https://cran.r-project.org/web/packages/BIEN/vignettes/BIEN_tutorial.html) |  
-| BISON | [rbison](~~~~~~~~add link here) |  
-| eBird | [rebird]() |  
-| GBIF |[rgbif]()|
-| iNaturalist | [rinat]() |
-| VertNet | [rvertnet]() |
-| iDigBio  | [ridigbio]() | 
+Table 1. List of biodiversity databases and their R package. 
+
+|Database  | R package |  
+|---  | --- |  
+| BIEN | [BIEN](https://cran.r-project.org/web/packages/BIEN/vignettes/BIEN_tutorial.html)|  
+ BISON | [rbison](https://github.com/ropensci/rbison)
+ eBird | [rebird](http://ebird.org/content/ebird/)
+ GBIF | [rgbif](https://github.com/ropensci/rgbif)
+ iNaturalist | [rinat](https://github.com/ropensci/rinat)
+ VertNet | [rvertnet](https://github.com/ropensci/rvertnet)
+ iDigBio  | [ridigbio](https://www.idigbio.org/)  
+   
+The great thing is, you could query many databases at one time using [spocc](https://github.com/ropensci/spocc) package, developed by [*rOpenSci*](https://ropensci.org/packages/)![]({{ page.root }}/figure/ropensci.png).  
+
+#### 2.3 occurrence data in Darwin Core  
+Take a look at the columns of the GBIF occurrences.
+
+```r
+names(occ_raw)
+```
+
+```
+##   [1] "acceptedNameUsage"                                                   
+##   [2] "acceptedScientificName"                                              
+##   [3] "acceptedTaxonKey"                                                    
+##   [4] "accessRights"                                                        
+##   [5] "adm1"                                                                
+##   [6] "adm2"                                                                
+##   [7] "associatedReferences"                                                
+##   [8] "basisOfRecord"                                                       
+##   [9] "behavior"                                                            
+##  [10] "bibliographicCitation"                                               
+##  [11] "catalogNumber"                                                       
+##  [12] "class"                                                               
+##  [13] "classKey"                                                            
+##  [14] "cloc"                                                                
+##  [15] "collectionCode"                                                      
+##  [16] "collectionID"                                                        
+##  [17] "continent"                                                           
+##  [18] "coordinatePrecision"                                                 
+##  [19] "coordinateUncertaintyInMeters"                                       
+##  [20] "country"                                                             
+##  [21] "crawlId"                                                             
+##  [22] "dataGeneralizations"                                                 
+##  [23] "datasetID"                                                           
+##  [24] "datasetKey"                                                          
+##  [25] "datasetName"                                                         
+##  [26] "dateIdentified"                                                      
+##  [27] "day"                                                                 
+##  [28] "depth"                                                               
+##  [29] "depthAccuracy"                                                       
+##  [30] "disposition"                                                         
+##  [31] "dynamicProperties"                                                   
+##  [32] "earliestAgeOrLowestStage"                                            
+##  [33] "earliestEonOrLowestEonothem"                                         
+##  [34] "earliestEpochOrLowestSeries"                                         
+##  [35] "earliestEraOrLowestErathem"                                          
+##  [36] "earliestPeriodOrLowestSystem"                                        
+##  [37] "elevation"                                                           
+##  [38] "elevationAccuracy"                                                   
+##  [39] "endDayOfYear"                                                        
+##  [40] "establishmentMeans"                                                  
+##  [41] "eventDate"                                                           
+##  [42] "eventID"                                                             
+##  [43] "eventRemarks"                                                        
+##  [44] "eventTime"                                                           
+##  [45] "family"                                                              
+##  [46] "familyKey"                                                           
+##  [47] "fieldNotes"                                                          
+##  [48] "fieldNumber"                                                         
+##  [49] "formation"                                                           
+##  [50] "fullCountry"                                                         
+##  [51] "gbifID"                                                              
+##  [52] "genericName"                                                         
+##  [53] "genus"                                                               
+##  [54] "genusKey"                                                            
+##  [55] "geodeticDatum"                                                       
+##  [56] "geologicalContextID"                                                 
+##  [57] "georeferencedBy"                                                     
+##  [58] "georeferencedDate"                                                   
+##  [59] "georeferenceProtocol"                                                
+##  [60] "georeferenceRemarks"                                                 
+##  [61] "georeferenceSources"                                                 
+##  [62] "georeferenceVerificationStatus"                                      
+##  [63] "habitat"                                                             
+##  [64] "higherClassification"                                                
+##  [65] "higherGeography"                                                     
+##  [66] "higherGeographyID"                                                   
+##  [67] "highestBiostratigraphicZone"                                         
+##  [68] "http://unknown.org/http_//rs.gbif.org/terms/1.0/Identifier"          
+##  [69] "http://unknown.org/http_//rs.gbif.org/terms/1.0/Multimedia"          
+##  [70] "http://unknown.org/http_//rs.tdwg.org/dwc/terms/Identification"      
+##  [71] "http://unknown.org/http_//rs.tdwg.org/dwc/terms/MeasurementOrFact"   
+##  [72] "http://unknown.org/http_//rs.tdwg.org/dwc/terms/ResourceRelationship"
+##  [73] "http://unknown.org/occurrenceDetails"                                
+##  [74] "identificationID"                                                    
+##  [75] "identificationQualifier"                                             
+##  [76] "identificationReferences"                                            
+##  [77] "identificationRemarks"                                               
+##  [78] "identificationVerificationStatus"                                    
+##  [79] "identifiedBy"                                                        
+##  [80] "identifier"                                                          
+##  [81] "individualCount"                                                     
+##  [82] "informationWithheld"                                                 
+##  [83] "infraspecificEpithet"                                                
+##  [84] "installationKey"                                                     
+##  [85] "institutionCode"                                                     
+##  [86] "institutionID"                                                       
+##  [87] "island"                                                              
+##  [88] "islandGroup"                                                         
+##  [89] "ISO2"                                                                
+##  [90] "key"                                                                 
+##  [91] "kingdom"                                                             
+##  [92] "kingdomKey"                                                          
+##  [93] "language"                                                            
+##  [94] "lastCrawled"                                                         
+##  [95] "lastInterpreted"                                                     
+##  [96] "lastParsed"                                                          
+##  [97] "lat"                                                                 
+##  [98] "latestEonOrHighestEonothem"                                          
+##  [99] "latestEpochOrHighestSeries"                                          
+## [100] "latestEraOrHighestErathem"                                           
+## [101] "latestPeriodOrHighestSystem"                                         
+## [102] "license"                                                             
+## [103] "lifeStage"                                                           
+## [104] "lithostratigraphicTerms"                                             
+## [105] "locality"                                                            
+## [106] "locationAccordingTo"                                                 
+## [107] "locationID"                                                          
+## [108] "locationRemarks"                                                     
+## [109] "lon"                                                                 
+## [110] "lowestBiostratigraphicZone"                                          
+## [111] "member"                                                              
+## [112] "modified"                                                            
+## [113] "month"                                                               
+## [114] "municipality"                                                        
+## [115] "nameAccordingTo"                                                     
+## [116] "namePublishedIn"                                                     
+## [117] "namePublishedInYear"                                                 
+## [118] "nomenclaturalCode"                                                   
+## [119] "occurrenceID"                                                        
+## [120] "occurrenceRemarks"                                                   
+## [121] "occurrenceStatus"                                                    
+## [122] "order"                                                               
+## [123] "orderKey"                                                            
+## [124] "organismID"                                                          
+## [125] "organismQuantity"                                                    
+## [126] "organismQuantityType"                                                
+## [127] "organismRemarks"                                                     
+## [128] "originalNameUsage"                                                   
+## [129] "otherCatalogNumbers"                                                 
+## [130] "ownerInstitutionCode"                                                
+## [131] "parentEventID"                                                       
+## [132] "parentNameUsage"                                                     
+## [133] "phylum"                                                              
+## [134] "phylumKey"                                                           
+## [135] "preparations"                                                        
+## [136] "previousIdentifications"                                             
+## [137] "protocol"                                                            
+## [138] "publishingCountry"                                                   
+## [139] "publishingOrgKey"                                                    
+## [140] "recordedBy"                                                          
+## [141] "recordNumber"                                                        
+## [142] "references"                                                          
+## [143] "reproductiveCondition"                                               
+## [144] "rights"                                                              
+## [145] "rightsHolder"                                                        
+## [146] "samplingEffort"                                                      
+## [147] "samplingProtocol"                                                    
+## [148] "scientificName"                                                      
+## [149] "scientificNameID"                                                    
+## [150] "sex"                                                                 
+## [151] "species"                                                             
+## [152] "speciesKey"                                                          
+## [153] "specificEpithet"                                                     
+## [154] "startDayOfYear"                                                      
+## [155] "taxonConceptID"                                                      
+## [156] "taxonID"                                                             
+## [157] "taxonKey"                                                            
+## [158] "taxonomicStatus"                                                     
+## [159] "taxonRank"                                                           
+## [160] "taxonRemarks"                                                        
+## [161] "type"                                                                
+## [162] "typeStatus"                                                          
+## [163] "typifiedName"                                                        
+## [164] "verbatimCoordinateSystem"                                            
+## [165] "verbatimElevation"                                                   
+## [166] "verbatimEventDate"                                                   
+## [167] "verbatimLocality"                                                    
+## [168] "verbatimSRS"                                                         
+## [169] "verbatimTaxonRank"                                                   
+## [170] "vernacularName"                                                      
+## [171] "waterBody"                                                           
+## [172] "year"                                                                
+## [173] "downloadDate"
+```
+The meaning of those columns/terms are defined by Darwin Core. Refer to [Darwin Core quick reference guide](https://dwc.tdwg.org/terms/) for more information.  
+
+A few columns to highlight:  
+* `basisOfRecord`  
+  * The specific nature of the data record.  
+  * PreservedSpecimen, FossilSpecimen, LivingSpecimen, MaterialSample, Event, HumanObservation, MachineObservation, Taxon, Occurrence  
+  
+* `year`  
+  * The four-digit year in which the Event occurred, according to the Common Era Calendar.
+
+* `lat` and `lon` (or `decimalLongitude`,`decimalLatitude` in Darwin Core)  
+  *The geographic longitude/latitude of the geographic center of a Location. Positive values are  east of the Greenwich Meridian/north of the Equator, negative values are west/south of it. Legal values lie between [-180 180] / [-90 90], inclusive.
+
+#### 2.4 Clean occurrence data
+Since some of our records do not have appropriate coordinates and some have missing locational data, we need to remove them from our dataset. To do this, we created a new dataset named “occ_clean”, which is a subset of the “occ_raw” dataset where records with missing latitude and/or longitude are removed.  
+
+```r
+# here we remove erroneous coordinates, where either the latitude or longitude is missing
+occ_clean <- subset(occ_raw,(!is.na(lat))&(!is.na(lon))) 
+#  "!" means the opposite logic value
+
+#Show the number of records that are removed from the dataset.  
+cat(nrow(occ_raw)-nrow(occ_clean), "records are removed")
+```
+
+```
+## 2432 records are removed
+```
+
+Remove duplicated data based on latitude and longitude  
+
+```r
+dups <- duplicated( occ_clean[c("lat","lon")]  )
+occ_unique <- occ_clean[!dups,]
+cat(nrow(occ_clean)-nrow(occ_unique), "records are removed")
+```
+
+```
+## 1459 records are removed
+```
+  
+
+show the frequency table of "basisOfRecord"
+
+```r
+table(occ_unique$basisOfRecord)
+```
+
+```
+## 
+##     FOSSIL_SPECIMEN   HUMAN_OBSERVATION     LIVING_SPECIMEN 
+##                  13                2433                   1 
+## MACHINE_OBSERVATION         OBSERVATION  PRESERVED_SPECIMEN 
+##                  33                  27                 901 
+##             UNKNOWN 
+##                 209
+```
+  
+
+only keep record that are associted with a specimen
+
+```r
+occ_unique_specimen <- subset(occ_unique, basisOfRecord=="PRESERVED_SPECIMEN")
+cat(nrow(occ_unique_specimen), "out of ", nrow(occ_unique), "records are specimen")
+```
+
+```
+## 901 out of  3617 records are specimen
+```
+
+show the histogram of "year"
+
+```r
+#plot(  hist(occ_unique_specimen$year) )
+#ggplot2()
+```
 
 
+to filter the species records by year, in this example 1950 to 2000:
 
-| Tables        | Are           | Cool  |
-| ------------- |:-------------:| -----:|
-| col 3 is      | right-aligned | $1600 |
-| col 2 is      | centered      |   $12 |
-| zebra stripes | are neat      |    $1 |
+```r
+occ_unique_specimen_present <- subset(occ_unique_specimen, year>=1950 & year <=2000)
+```
+
+show a quick summary of years in the data
+
+```r
+summary(occ_unique_specimen_present$year)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##    1950    1965    1976    1977    1989    2000
+```
 
 
+```r
+f <- system.file("external/test.grd", package="raster")
+f
+```
 
-(fix me) the great thing is, you could query many databases at one time:  
-spocc package  
-developed by *rOpenSci*  
+```
+## [1] "D:/fx_software/R-3.5.1/library/raster/external/test.grd"
+```
 
-https://github.com/ropensci/spocc  
-https://ropensci.github.io/spocc/  
+```r
+r <- raster(f)
+plot(r)
+```
+
+![plot of chunk test raster](figure/test raster-1.png)
+
+```r
+logo <- raster(system.file("external/rlogo.grd", package="raster")) 
+plot(logo)
+```
+
+![plot of chunk test raster](figure/test raster-2.png)
+
+```r
+#from scratch
+r1 <- raster(nrows=108, ncols=21, xmn=0, xmx=10)
+plot(r1)
+```
+
+```
+## Error in .plotraster2(x, col = col, maxpixels = maxpixels, add = add, : no values associated with this RasterLayer
+```
+
+```r
+#from an Extent object
+e <- extent(r)
+r2 <- raster(e)
+
+#from another Raster* object
+r3 <- raster(r)
+s <- stack(r, r, r)
+r4 <- raster(s)
+r5 <- raster(s, 3)
+```
 
 
+```r
+df <- data.frame(
+  gp = factor(rep(letters[1:3], each = 10)),
+  y = rnorm(30)
+)
+ds <- plyr::ddply(df, "gp", plyr::summarise, mean = mean(y), sd = sd(y))
 
+# The summary data frame ds is used to plot larger red points on top
+# of the raw data. Note that we don't need to supply `data` or `mapping`
+# in each layer because the defaults from ggplot() are used.
+ggplot(df, aes(gp, y)) +
+  geom_point() +
+  geom_point(data = ds, aes(y = mean), colour = 'red', size = 3)
+```
 
-> ## Challenge: check if packages are setup?
+![plot of chunk test pplot](figure/test pplot-1.png)
+
+> ## Challenge: Download occurrences from GBIF and filter data
+> select your favorite species  
+> only keep `specimen` records  
+> only keep records that are collected between `2000 & 2018`  
+> only keep records that have `valid longitude & latitude`  
 > > ## Solution
-> > Run a simple Maxent model from R terminal:
 > > 
 > > ```r
-> > # get predictor variables
-> > fnames <- list.files(path=paste(system.file(package="dismo"), '/ex', sep=''),
-> >               pattern='grd', full.names=TRUE )
-> > predictors <- stack(fnames)
-> > # file with presence points
-> > occurence <- paste(system.file(package="dismo"), '/ex/bradypus.csv', sep='')
-> > occ <- read.table(occurence, header=TRUE, sep=',')[,-1]
-> > # witholding a 20% sample for testing
-> > fold <- kfold(occ, k=5)
-> > occtest <- occ[fold == 1, ]
-> > occtrain <- occ[fold != 1, ]
-> > # fit model, biome is a categorical variable
-> > me <- maxent(predictors, occtrain, factors='biome')
-> > # see the maxent results in a browser:
-> > me
+> > # download 
+> > myocc <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE) 
+> >  
+> > # filter 
+> > myocc_final <- subset(myocc,basisOfRecord=="PRESERVED_SPECIMEN" &
+> >                             year >= 2000 & year <= 2018 &
+> >                             !is.na(lat) & !is.na(lon)    )
+> > 
+> > # show number of records that are removed 
+> > nrow(myocc) - nrow(myocc_final)                          
 > > ```
 > {: .solution}
 {: .challenge}

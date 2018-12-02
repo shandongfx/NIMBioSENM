@@ -10,100 +10,181 @@ objectives:
 
 ---
 
-## 2 Occurrence data  
-#### 2.1 Download occurrence data  
-
-(fix me) add a decription about biodiversity databases; a figure about GBIF; a list of databases; what is api;
-
-For our example, we download occurrence data for the nine-banded armadillo from GBIF.org (Global Biodiversity Information Facility). 
-
-```{r load pk,message=FALSE,warning=FALSE}
+```{r load pk,message=FALSE,warning=FALSE,echo=FALSE}
+# not for shown
 library("raster")
 library("dismo")
 library("rgeos")
 library("rgdal")
 library("sp")
 library("ENMeval")
+library(ggplot2)
+
+if(file.exists("data/occ_raw.rdata")){
+  load("data/occ_raw.rdata")
+}else{
+occ_raw <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE) # the default is to download all
+save(occ_raw,file = "data/occ_raw.rdata")
+  write.csv("data/occ_raw.csv")
+}
 ```
 
-#####Thread 6
-```{r prepare, message=FALSE, warning=FALSE}
-require(jsonlite)
+## 2 Occurrence data  
+#### 2.1 Download occurrence data  
 
-# gbif is a function in dismo package, which directly download occurrences through GBIF api
+(fix me) add a decription about biodiversity databases; a figure about GBIF; a list of databases; what is api;  
+
+`gbif()` is a function in `dismo` package, which can directly download occurrences through GBIF api; here we query the number of records of the nine-banded armadillo, **without downloading**  
+```{r download1, message=FALSE, warning=FALSE,eval=TRUE}
 gbif(genus="Dasypus",species="novemcinctus",download=FALSE)
+```
 
-# download the first 1000 record ()
-occ_raw <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE,
-                start=1,end=100) # the default is to download all
-#save(occ_raw,file = "data/occ_raw")
-#write.csv("data/occ_raw.csv")
+by setting `download=TRUE`, we can download all records  
+```{r download2, message=FALSE, warning=FALSE,eval=FALSE}
+occ_raw <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE) 
 
 # to view the first few records the occurrence dataset use:
 #head( occ_raw )
 ```
 
 
-(fix me) add a list of packages and biodiversity databases;  
-| database | R package |  
-| -------- | --------- |   
-| BIEN | [BIEN](https://cran.r-project.org/web/packages/BIEN/vignettes/BIEN_tutorial.html) |  
-| BISON | [rbison](~~~~~~~~add link here) |  
-| eBird | [rebird]() |  
-| GBIF |[rgbif]()|
-| iNaturalist | [rinat]() |
-| VertNet | [rvertnet]() |
-| iDigBio  | [ridigbio]() |  
+#### 2.2 List of biodiversity databases and their R package.  
 
-| database        | R package           |
-| ------------- |-------------|  
-| BIEN | [BIEN](https://cran.r-project.org/web/packages/BIEN/vignettes/BIEN_tutorial.html) |  
-| BISON | [rbison](~~~~~~~~add link here) |  
-| eBird | [rebird]() |  
-| GBIF |[rgbif]()|
-| iNaturalist | [rinat]() |
-| VertNet | [rvertnet]() |
-| iDigBio  | [ridigbio]() | 
+Table 1. List of biodiversity databases and their R package. 
+
+|Database  | R package |  
+|---  | --- |  
+| BIEN | [BIEN](https://cran.r-project.org/web/packages/BIEN/vignettes/BIEN_tutorial.html)|  
+ BISON | [rbison](https://github.com/ropensci/rbison)
+ eBird | [rebird](http://ebird.org/content/ebird/)
+ GBIF | [rgbif](https://github.com/ropensci/rgbif)
+ iNaturalist | [rinat](https://github.com/ropensci/rinat)
+ VertNet | [rvertnet](https://github.com/ropensci/rvertnet)
+ iDigBio  | [ridigbio](https://www.idigbio.org/)  
+   
+The great thing is, you could query many databases at one time using [spocc](https://github.com/ropensci/spocc) package, developed by [*rOpenSci*](https://ropensci.org/packages/)![]({{ page.root }}/figure/ropensci.png).  
+
+#### 2.3 occurrence data in Darwin Core  
+Take a look at the columns of the GBIF occurrences.
+```{r columns, message=FALSE, warning=FALSE}
+names(occ_raw)
+```
+The meaning of those columns/terms are defined by Darwin Core. Refer to [Darwin Core quick reference guide](https://dwc.tdwg.org/terms/) for more information.  
+
+A few columns to highlight:  
+* `basisOfRecord`  
+  * The specific nature of the data record.  
+  * PreservedSpecimen, FossilSpecimen, LivingSpecimen, MaterialSample, Event, HumanObservation, MachineObservation, Taxon, Occurrence  
+  
+* `year`  
+  * The four-digit year in which the Event occurred, according to the Common Era Calendar.
+
+* `lat` and `lon` (or `decimalLongitude`,`decimalLatitude` in Darwin Core)  
+  *The geographic longitude/latitude of the geographic center of a Location. Positive values are  east of the Greenwich Meridian/north of the Equator, negative values are west/south of it. Legal values lie between [-180 180] / [-90 90], inclusive.
+
+#### 2.4 Clean occurrence data
+Since some of our records do not have appropriate coordinates and some have missing locational data, we need to remove them from our dataset. To do this, we created a new dataset named “occ_clean”, which is a subset of the “occ_raw” dataset where records with missing latitude and/or longitude are removed.  
+```{r clean_data1}
+# here we remove erroneous coordinates, where either the latitude or longitude is missing
+occ_clean <- subset(occ_raw,(!is.na(lat))&(!is.na(lon))) 
+#  "!" means the opposite logic value
+
+#Show the number of records that are removed from the dataset.  
+cat(nrow(occ_raw)-nrow(occ_clean), "records are removed")
+```  
+
+Remove duplicated data based on latitude and longitude  
+```{r clean_data2}
+dups <- duplicated( occ_clean[c("lat","lon")]  )
+occ_unique <- occ_clean[!dups,]
+cat(nrow(occ_clean)-nrow(occ_unique), "records are removed")
+```
+  
+
+show the frequency table of "basisOfRecord"
+```{r clean_data3}
+table(occ_unique$basisOfRecord)
+```
+  
+
+only keep record that are associted with a specimen
+```{r clean_data4}
+occ_unique_specimen <- subset(occ_unique, basisOfRecord=="PRESERVED_SPECIMEN")
+cat(nrow(occ_unique_specimen), "out of ", nrow(occ_unique), "records are specimen")
+```
+
+show the histogram of "year"
+```{r clean_data5}
+#plot(  hist(occ_unique_specimen$year) )
+#ggplot2()
+```
 
 
+to filter the species records by year, in this example 1950 to 2000:
+```{r clean_data6}
+occ_unique_specimen_present <- subset(occ_unique_specimen, year>=1950 & year <=2000)
+```
 
-| Tables        | Are           | Cool  |
-| ------------- |:-------------:| -----:|
-| col 3 is      | right-aligned | $1600 |
-| col 2 is      | centered      |   $12 |
-| zebra stripes | are neat      |    $1 |
+show a quick summary of years in the data
+```{r clean_data7}
+summary(occ_unique_specimen_present$year)
+```
 
+```{r test raster}
+f <- system.file("external/test.grd", package="raster")
+f
+r <- raster(f)
+plot(r)
+logo <- raster(system.file("external/rlogo.grd", package="raster")) 
+plot(logo)
 
+#from scratch
+r1 <- raster(nrows=108, ncols=21, xmn=0, xmx=10)
+plot(r1)
+#from an Extent object
+e <- extent(r)
+r2 <- raster(e)
 
-(fix me) the great thing is, you could query many databases at one time:  
-spocc package  
-developed by *rOpenSci*  
+#from another Raster* object
+r3 <- raster(r)
+s <- stack(r, r, r)
+r4 <- raster(s)
+r5 <- raster(s, 3)
+```
 
-https://github.com/ropensci/spocc  
-https://ropensci.github.io/spocc/  
+```{r test pplot}
+df <- data.frame(
+  gp = factor(rep(letters[1:3], each = 10)),
+  y = rnorm(30)
+)
+ds <- plyr::ddply(df, "gp", plyr::summarise, mean = mean(y), sd = sd(y))
 
+# The summary data frame ds is used to plot larger red points on top
+# of the raw data. Note that we don't need to supply `data` or `mapping`
+# in each layer because the defaults from ggplot() are used.
+ggplot(df, aes(gp, y)) +
+  geom_point() +
+  geom_point(data = ds, aes(y = mean), colour = 'red', size = 3)
 
+```
 
-
-> ## Challenge: check if packages are setup?
+> ## Challenge: Download occurrences from GBIF and filter data
+> select your favorite species  
+> only keep `specimen` records  
+> only keep records that are collected between `2000 & 2018`  
+> only keep records that have `valid longitude & latitude`  
 > > ## Solution
-> > Run a simple Maxent model from R terminal:
 > > ```{r check_setups, echo=TRUE,eval=FALSE}
-> > # get predictor variables
-> > fnames <- list.files(path=paste(system.file(package="dismo"), '/ex', sep=''),
-> >               pattern='grd', full.names=TRUE )
-> > predictors <- stack(fnames)
-> > # file with presence points
-> > occurence <- paste(system.file(package="dismo"), '/ex/bradypus.csv', sep='')
-> > occ <- read.table(occurence, header=TRUE, sep=',')[,-1]
-> > # witholding a 20% sample for testing
-> > fold <- kfold(occ, k=5)
-> > occtest <- occ[fold == 1, ]
-> > occtrain <- occ[fold != 1, ]
-> > # fit model, biome is a categorical variable
-> > me <- maxent(predictors, occtrain, factors='biome')
-> > # see the maxent results in a browser:
-> > me
+> > # download 
+> > myocc <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE) 
+> >  
+> > # filter 
+> > myocc_final <- subset(myocc,basisOfRecord=="PRESERVED_SPECIMEN" &
+> >                             year >= 2000 & year <= 2018 &
+> >                             !is.na(lat) & !is.na(lon)    )
+> > 
+> > # show number of records that are removed 
+> > nrow(myocc) - nrow(myocc_final)                          
 > > ```
 > {: .solution}
 {: .challenge}

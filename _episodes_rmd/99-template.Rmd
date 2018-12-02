@@ -1,6 +1,6 @@
 ---
 source: Rmd
-title: "Using RMarkdown"
+title: "template"
 teaching: 10
 exercises: 2
 questions:

@@ -1,0 +1,132 @@
+Mon Dec 03 14:18:11 EST 2018
+MaxEnt version 3.3.3k
+Reading file absence
+readGrid: max memory 477626368, total allocated 254279680, free 66610712, used 187668968, increment 6608392
+Reading samples from presence
+Read samples: max memory 477626368, total allocated 254279680, free 66610712, used 187668968, increment 0
+Adding samples to background in feature space
+Command line used:  autorun -e /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp/absence -o /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp -s /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp/presence -z noautofeature linear quadratic nohinge noproduct nothreshold responsecurves jackknife outputformat=logistic outputfiletype=asc projectionlayers=/Users/lablap/lesson_mac/_episodes_rmd/data/bioclim norandomseed removeduplicates betamultiplier=1 writeplotdata extrapolate nodoclamp
+Command line to repeat: java density.MaxEnt nowarnings noprefixes responsecurves jackknife outputdirectory=/Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp projectionlayers=/Users/lablap/lesson_mac/_episodes_rmd/data/bioclim samplesfile=/Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp/presence environmentallayers=/Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp/absence noproduct nothreshold nohinge autorun writeplotdata novisible noautofeature nodoclamp
+Species: species
+Layers: bio1 bio11
+Layertypes: Continuous Continuous
+responsecurves: true
+jackknife: true
+outputdirectory: /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp
+projectionlayers: /Users/lablap/lesson_mac/_episodes_rmd/data/bioclim
+samplesfile: /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp/presence
+environmentallayers: /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp/absence
+product: false
+threshold: false
+hinge: false
+autorun: true
+writeplotdata: true
+visible: false
+autofeature: false
+doclamp: false
+
+getSamples: max memory 477626368, total allocated 254279680, free 66610712, used 187668968, increment 0
+Making features
+makeFeatures: max memory 477626368, total allocated 254279680, free 66610712, used 187668968, increment 0
+species: 
+Regularization values: linear/quadratic/product: 0.050, categorical: 0.250, threshold: 1.000, hinge: 0.500
+300 samples
+Density: max memory 477626368, total allocated 254279680, free 66610712, used 187668968, increment 0
+linearPredictor: max memory 477626368, total allocated 254279680, free 66610712, used 187668968, increment 0
+FeaturedSpace: max memory 477626368, total allocated 254279680, free 66610712, used 187668968, increment 0
+Sequential: max memory 477626368, total allocated 254279680, free 66610712, used 187668968, increment 0
+Initial loss: 7.22402480828583
+180: time = 0.031000 loss = 7.004963
+Resulting gain: 0.21906164927316496
+Projecting...
+Writing file /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp/species.csv
+Projecting...
+Writing file /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp/species_bioclim.asc
+Writing file /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp/species_bioclim_clamping.asc
+Time since start: 4.635
+Writing /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp/plots/species_bioclim.png
+Writing /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp/plots/species_bioclim_clamping.png
+Time since start: 6.039
+Writing file /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp/species_bioclim_novel.asc
+Writing file /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs4_NOclamp/species_bioclim_novel_limiting.asc
+Time since start: 11.47
+species response curves
+Response curve: only bio1
+Making features
+makeFeatures: max memory 477626368, total allocated 284164096, free 111936160, used 172227936, increment -15441032
+species bio1: 
+Regularization values: linear/quadratic/product: 0.050, categorical: 0.250, threshold: 1.000, hinge: 0.500
+300 samples
+Density: max memory 477626368, total allocated 284164096, free 111933992, used 172230104, increment 2168
+linearPredictor: max memory 477626368, total allocated 284164096, free 111933992, used 172230104, increment 0
+FeaturedSpace: max memory 477626368, total allocated 284164096, free 111933992, used 172230104, increment 0
+Sequential: max memory 477626368, total allocated 284164096, free 111933992, used 172230104, increment 0
+Initial loss: 7.22402480828583
+140: time = 0.024000 loss = 7.107628
+Resulting gain: 0.11639699579479679
+species response curves
+Response curve: only bio11
+Making features
+makeFeatures: max memory 477626368, total allocated 284164096, free 107417752, used 176746344, increment 4516240
+species bio11: 
+Regularization values: linear/quadratic/product: 0.050, categorical: 0.250, threshold: 1.000, hinge: 0.500
+300 samples
+Density: max memory 477626368, total allocated 284164096, free 107417752, used 176746344, increment 0
+linearPredictor: max memory 477626368, total allocated 284164096, free 107417752, used 176746344, increment 0
+FeaturedSpace: max memory 477626368, total allocated 284164096, free 107417752, used 176746344, increment 0
+Sequential: max memory 477626368, total allocated 284164096, free 107417752, used 176746344, increment 0
+Initial loss: 7.22402480828583
+120: time = 0.018000 loss = 7.121536
+Resulting gain: 0.10248886743297358
+species response curves
+Jackknife: leave bio1 out
+Making features
+makeFeatures: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 7110328
+species bio1: 
+Regularization values: linear/quadratic/product: 0.050, categorical: 0.250, threshold: 1.000, hinge: 0.500
+300 samples
+Density: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+linearPredictor: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+FeaturedSpace: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+Sequential: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+Initial loss: 7.22402480828583
+120: time = 0.018000 loss = 7.121536
+Jackknife: leave bio11 out
+Making features
+makeFeatures: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+species bio11: 
+Regularization values: linear/quadratic/product: 0.050, categorical: 0.250, threshold: 1.000, hinge: 0.500
+300 samples
+Density: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+linearPredictor: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+FeaturedSpace: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+Sequential: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+Initial loss: 7.22402480828583
+140: time = 0.021000 loss = 7.107628
+Jackknife: only bio1
+Making features
+makeFeatures: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+species bio1: 
+Regularization values: linear/quadratic/product: 0.050, categorical: 0.250, threshold: 1.000, hinge: 0.500
+300 samples
+Density: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+linearPredictor: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+FeaturedSpace: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+Sequential: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+Initial loss: 7.22402480828583
+140: time = 0.025000 loss = 7.107628
+Res.gain: 0.11639699579479679
+Jackknife: only bio11
+Making features
+makeFeatures: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+species bio11: 
+Regularization values: linear/quadratic/product: 0.050, categorical: 0.250, threshold: 1.000, hinge: 0.500
+300 samples
+Density: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+linearPredictor: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+FeaturedSpace: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+Sequential: max memory 477626368, total allocated 284164096, free 100307424, used 183856672, increment 0
+Initial loss: 7.22402480828583
+120: time = 0.018000 loss = 7.121536
+Res.gain: 0.10248886743297358
+Ending

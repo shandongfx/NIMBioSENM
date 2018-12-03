@@ -17,13 +17,15 @@ keypoints:
 
 
 
-##  Maxent model - test run  
+##  6 Maxent model - manipulations   
 
-#### 5.0 prepare occ & raster 
+#### 6.0 prepare occ & raster, re-format the data for maxent  
 
 ~~~
 library("raster")
+library("dismo")
 
+# prepare spatial occ data
 if(!file.exists("data/occ_raw.rdata")){
   occ_raw <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE) 
   save(occ_raw,file = "data/occ_raw.rdata")
@@ -38,141 +40,166 @@ coordinates(occ_final) <- ~ lon + lat
 myCRS1 <- CRS("+init=epsg:4326") # WGS 84
 crs(occ_final) <- myCRS1
 
+# prepare raster data
 if( !file.exists( paste0("data/bioclim/bio_10m_bil.zip")   )){
   utils::download.file(url="http://biogeo.ucdavis.edu/data/climate/worldclim/1_4/grid/cur/bio_10m_bil.zip",
                        destfile="data/bioclim/bio_10m_bil.zip"   ) 
   utils::unzip("data/bioclim/bio_10m_bil.zip",exdir="data/bioclim") 
 }
 
-bio1 <- raster("data/bioclim/bio1.bil")
+# load rasters
+clim_list <- list.files("data/bioclim/",pattern=".bil$",full.names = T)
+clim <- raster::stack(clim_list) 
+
+occ_buffer <- buffer(occ_final,width=4*10^5) #unit is meter
+clim_mask <- mask(clim, occ_buffer)
+
+# extract environmental conditions
+set.seed(1) 
+bg <- sampleRandom(x=clim_mask,
+                   size=10000,
+                   na.rm=T, #removes the 'Not Applicable' points  
+                   sp=T) # return spatial points 
+
+set.seed(1) 
+
+# randomly select 50% for training
+selected <- sample(  1:nrow(occ_final),  nrow(occ_final)*0.5)
+
+occ_train <- occ_final[selected,] # this is the selection to be used for model training
+occ_test <- occ_final[-selected,] # this is the opposite of the selection which will be used for model testing
+
+# extracting env conditions
+env_occ_train <- extract(clim,occ_train)
+env_occ_test <- extract(clim,occ_test)
+
+# extracting env conditions for background
+env_bg <- extract(clim,bg)  
+
+#combine the conditions by row
+myPredictors <- rbind(env_occ_train,env_bg)
+
+# change matrix to dataframe
+myPredictors <- as.data.frame(myPredictors)
+
+# repeat the number 1 as many times as the number of rows in p, and repeat 0 for the rows of background points
+myResponse <- c(rep(1,nrow(env_occ_train)),
+                rep(0,nrow(env_bg))) 
+
+# training a maxent model with dataframes
+#mod <- dismo::maxent(x=myPredictors, ## env conditions
+#                     p=myResponse)   ## 1:presence or 0:absence
+~~~
+{: .language-r}
+
+#### 6.1 set output path  
+
+~~~
+dir.create("output")
+dir.create("output/maxent_output")
+
+# to train Maxent with tabular data
+mod <- dismo::maxent(x=myPredictors, ## env conditions
+                    p=myResponse,   ## 1:presence or 0:absence
+                    path=paste0(getwd(),"/output/maxent_outputs")
+              )
+# the maxent function runs a model in the default settings. To change these parameters,
+# you have to tell it what you want...i.e. response curves or the type of features
+
+# to view the model output
+list.files( paste0(getwd(),"/output/maxent_outputs" )  )
 ~~~
 {: .language-r}
 
 
-##4 Maxent parameters
-###4.1 Select features
 
-To run the model without using the default setting, we must define Maxent parameters. To do this we will load a function that will allow us to change model parameters. 
+~~~
+ [1] "absence"                       "maxent.html"                  
+ [3] "maxent.log"                    "maxentResults.csv"            
+ [5] "plots"                         "presence"                     
+ [7] "species_omission.csv"          "species_sampleAverages.csv"   
+ [9] "species_samplePredictions.csv" "species.csv"                  
+[11] "species.html"                  "species.lambdas"              
+~~~
+{: .output}
 
-#####Thread 21
+#### 6.2 change default settings   
+
+To run the model without using the default setting, we must define Maxent parameters. To do this we will load a function that will facilitate us to change model parameters.   
+
+Here, we first load a function called `prepPara()`from Github, using `source_url()` function from `devtools` package.  
 
 ~~~
 # load the function that prepares parameters for maxent
-source("Appendix2_prepPara.R")
+devtools::source_url("https://raw.githubusercontent.com/shandongfx/nimbios_enm/master/Appendix2_prepPara.R")
+
+# get a list of default settings
+myparameters <- prepPara(userfeatures=NULL) 
+print(myparameters)
 ~~~
 {: .language-r}
 
 
 
 ~~~
-Warning in file(filename, "r", encoding = encoding): cannot open file
-'Appendix2_prepPara.R': No such file or directory
+ [1] "autofeature"           "responsecurves"       
+ [3] "jackknife"             "outputformat=logistic"
+ [5] "outputfiletype=asc"    "norandomseed"         
+ [7] "removeduplicates"      "writeplotdata"        
+ [9] "extrapolate"           "doclamp"              
 ~~~
-{: .error}
+{: .output}
 
-
-
-~~~
-Error in file(filename, "r", encoding = encoding): cannot open the connection
-~~~
-{: .error}
-
-
+The defalut setting for features in Maxent is autofeature:  
 
 ~~~
-# The defalut setting for features in Maxent is autofeature:
-mod1_autofeature <- maxent(x=pder[c("bio1","bio4","bio11")], 
-                           ## env conditions, here we selected only 3 predictors
-                           p=pa, ## 1:presence or 0:absence
-                           path=paste0(getwd(),"/output/maxent_outputs"),
-                           #path=,this is the folder you will find manxent output
-                           #note, for Mac user, the short cut (e.g. "~/Desktop") for home directory may lead to errors.
-                           args=prepPara(userfeatures=NULL) 
-                           # use preppara to prepare the path
-                           ) 
+# training a maxent model with dataframes
+mod <- dismo::maxent(x=myPredictors, ## env conditions
+                     p=myResponse,   ## 1:presence or 0:absence
+                     args=myparameters  )
 ~~~
 {: .language-r}
 
-
-
-~~~
-Error in maxent(x = pder[c("bio1", "bio4", "bio11")], p = pa, path = paste0(getwd(), : could not find function "maxent"
-~~~
-{: .error}
-
-
-
-~~~
-                           ## default is autofeature
+#### 6.2 Select features  
+We can also select different features other than **auto feature**. Options are `L-linear, Q-Quadratic, H-Hinge, P-Product, T-Threshold`.  
+For example, here we select Linear and Quadratic.  
+`prepPara(userfeatures="LQ")`
               
-# To move away from the default, autofeatures, and instead select Linear & Quadratic features
 
-mod1_lq <- maxent(x=pder[c("bio1","bio4","bio11")],
-                  p=pa,
+~~~
+myparameters1 <- prepPara(userfeatures="LQ")
+mod1_lq <- maxent(x=myPredictors[c("bio1","bio4","bio11")],
+                  p=myResponse,
                   path=paste0(getwd(),"/output/maxent_outputs1_lq"),
-                  args=prepPara(userfeatures="LQ") ) 
+                  args=myparameters1 )
 ~~~
 {: .language-r}
 
+#### 6.3 Change beta-multiplier  
 
+The beta-multiplier can be used to restrict or constrain the data to prevent model over-fitting; the default setting in Maxent is 1. `Smaller` values will `constrain` the model more, whereas `larger` numbers will `relax` the model, making it "smoother".  
 
-~~~
-Error in maxent(x = pder[c("bio1", "bio4", "bio11")], p = pa, path = paste0(getwd(), : could not find function "maxent"
-~~~
-{: .error}
-
-
-
-~~~
-                  ## default is autofeature, here LQ represents Linear& Quadratic
-                  ## (L-linear, Q-Quadratic, H-Hinge, P-Product, T-Threshold)
-~~~
-{: .language-r}
-
-###4.2 Change beta-multiplier
-
-The beta-multiplier can be used to restrict or constrain the data to prevent model over-fitting; the default setting in Maxent is 1. Smaller values will constrain the model more, whereas larger numbers will relax the model, making it "smoother".
-
-#####Thread 22
+For example, here we select Linear, Quadratic, and Hinge features, and beta-multiplier as 0.1  
+`prepPara(userfeatures="LQH",  
+          betamultiplier=0.1)`  
 
 ~~~
+myparameters2 <- prepPara(userfeatures="LQH",  
+                          betamultiplier=0.1)
 # change beta-multiplier for all features to 0.5, the default beta-multiplier is 1
-mod2_fix <- maxent(x=pder[c("bio1","bio4","bio11")], 
-               p=pa, 
-              path=paste0(getwd(),"/output/maxent_outputs2_0.1"), 
-              args=prepPara(userfeatures="LQH",
-                            betamultiplier=0.1) ) 
-~~~
-{: .language-r}
+mod2_fix <- maxent(x=myPredictors[c("bio1","bio4","bio11")],
+                   p=myResponse,
+                   path=paste0(getwd(),"/output/maxent_outputs2_0.1"), 
+                   args=myparameters2  ) 
 
 
+myparameters3 <- prepPara(userfeatures="LQH",  
+                          betamultiplier=10)
+mod2_relax <- maxent(x=myPredictors[c("bio1","bio4","bio11")],
+                     p=myResponse,
+                     path=paste0(getwd(),"/output/maxent_outputs2_10"), 
+                     args=myparameters3  ) 
 
-~~~
-Error in maxent(x = pder[c("bio1", "bio4", "bio11")], p = pa, path = paste0(getwd(), : could not find function "maxent"
-~~~
-{: .error}
-
-
-
-~~~
-mod2_relax <- maxent(x=pder[c("bio1","bio4","bio11")], 
-               p=pa, 
-              path=paste0(getwd(),"/output/maxent_outputs2_10"), 
-              args=prepPara(userfeatures="LQH",
-                            betamultiplier=10) ) 
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in maxent(x = pder[c("bio1", "bio4", "bio11")], p = pa, path = paste0(getwd(), : could not find function "maxent"
-~~~
-{: .error}
-
-
-
-~~~
 # Show response curves
 # first, silumate some data, build a gradient of conditions for one variable, and keep others constant
 fake_data <- data.frame(bio1=seq(-300,300,1),  
@@ -199,722 +226,257 @@ head(fake_data)
 
 ~~~
 ped_fix <- predict(mod2_fix,fake_data)
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in predict(mod2_fix, fake_data): object 'mod2_fix' not found
-~~~
-{: .error}
-
-
-
-~~~
 ped_relax <- predict(mod2_relax,fake_data)
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in predict(mod2_relax, fake_data): object 'mod2_relax' not found
-~~~
-{: .error}
-
-
-
-~~~
-plot(fake_data$bio1,ped_fix)
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in plot(fake_data$bio1, ped_fix): object 'ped_fix' not found
-~~~
-{: .error}
-
-
-
-~~~
+plot(fake_data$bio1,ped_fix,col="blue")
 points(fake_data$bio1,ped_relax,col="red")
 ~~~
 {: .language-r}
 
+<img src="../fig/rmd-beta_multiplier1-1.png" title="plot of chunk beta_multiplier1" alt="plot of chunk beta_multiplier1" width="612" style="display: block; margin: auto;" />
 
-
-~~~
-Error in xy.coords(x, y): object 'ped_relax' not found
-~~~
-{: .error}
-
-
-
-~~~
-# A more complex model, which has three features; linear & quadratic, and hinge. Where a different beta-multipler is used for each feature
-mod2 <- maxent(x=pder[c("bio1","bio4","bio11")], 
-               p=pa, 
-              path=paste0(getwd(),"/output/maxent_outputs2_complex"), 
-              args=prepPara(userfeatures="LQH",
-                            ## include L, Q, H features
-                            beta_lqp=1.5, 
-                            ## use different beta-multiplier for different features
-                            beta_hinge=0.5 ) ) 
-~~~
-{: .language-r}
-
-
+We can also set different beta-multiplers for different features.   
+`  beta_threshold= 1  
+   beta_categorical=1  
+   beta_lqp=1  
+   beta_hinge=1`  
 
 ~~~
-Error in maxent(x = pder[c("bio1", "bio4", "bio11")], p = pa, path = paste0(getwd(), : could not find function "maxent"
-~~~
-{: .error}
+myparameters4 <- prepPara(userfeatures="LQH",## include L, Q, H features
+                          beta_lqp=1.5,      ## use different beta-multiplier for different features
+                          beta_hinge=0.5 )
 
-
-
-~~~
+mod2_complex <- maxent(x=myPredictors[c("bio1","bio4","bio11")],
+                       p=myResponse,
+                       path=paste0(getwd(),"/output/maxent_outputs2_complex"), 
+                       args=myparameters4) 
 # you can also change others
-                    # beta_threshold= 1
-                    # beta_categorical=1
-                    # beta_lqp=1
-                    # beta_hinge=1
 ~~~
 {: .language-r}
 
-###4.3 Specify projection layers
+#### 6.3 Specify projection layers  
+Earlier we created a model, and then created a prediction from that model, but here we want to train the model and create a prediction simultaneously (like what happens in Maxent user interface).  
 
-Earlier we created a model, and then created a prediction from that model, but here we want to train the model and create a prediction simultaneously (like what happens in Maxent user interface). 
-
-#####Thread 23
 
 ~~~
+myparameters5 <- prepPara(userfeatures="LQ",
+                          betamultiplier=1,
+                          projectionlayers=paste0(getwd(),"/data/bioclim")
+                         )
+
 # note: 
 # (1) the projection layers must exist in the hard disk (as relative to computer RAM); 
 # (2) the names of the layers (excluding the name extension) must match the names of the predictor variables. 
 
 # Create Model
-mod3 <- maxent(x=pder[c("bio1","bio11")], 
-               p=pa, 
-              path=paste0(getwd(),"/output/maxent_outputs3_prj1"), 
-              args=prepPara(userfeatures="LQ",
-                            betamultiplier=1,
-                            projectionlayers="/data/studyarea") ) 
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in maxent(x = pder[c("bio1", "bio11")], p = pa, path = paste0(getwd(), : could not find function "maxent"
-~~~
-{: .error}
-
-
-
-~~~
-              # here we specify the relative path to the layer used in the projection
+mod3 <- maxent(x=myPredictors[c("bio1","bio4","bio11")],
+               p=myResponse,
+               path=paste0(getwd(),"/output/maxent_outputs3_prj1"), 
+               args=myparameters5 ) 
 
 # load the projected map
-ped <- raster(paste0("output/maxent_outputs3_prj1/species_studyarea.asc"))
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in .rasterObjectFromFile(x, band = band, objecttype = "RasterLayer", : Cannot create a RasterLayer object from this file. (file does not exist)
-~~~
-{: .error}
-
-
-
-~~~
+ped <- raster(paste0(getwd(),"/output/maxent_outputs3_prj1/species_bioclim.asc"))
 plot(ped)
 ~~~
 {: .language-r}
 
+<img src="../fig/rmd-specify_projection_layers1-1.png" title="plot of chunk specify_projection_layers1" alt="plot of chunk specify_projection_layers1" width="612" style="display: block; margin: auto;" />
 
-
-~~~
-Error in plot(ped): object 'ped' not found
-~~~
-{: .error}
-
-
+small experiment:  
+use different betamultiplier to get distributions  
 
 ~~~
-# we can also project on a broader map, but please use with caution as there is inaccuracy associated with model extrapolation.
-mod3 <- maxent(x=pder[c("bio1","bio11")], 
-               p=pa, 
-              path=paste0(getwd(),"/output/maxent_outputs3_prj2"), 
-              args=prepPara(userfeatures="LQ",
-                            betamultiplier=1,
-                            projectionlayers="/data/studyarea") ) 
-~~~
-{: .language-r}
+myparameters_relax <- prepPara(userfeatures="LQ",
+                               betamultiplier=10,
+                               projectionlayers=paste0(getwd(),"/data/bioclim")
+                               )
+myparameters5_default <- prepPara(userfeatures="LQ",
+                                  betamultiplier=1,
+                                  projectionlayers=paste0(getwd(),"/data/bioclim")
+                                  )
 
+mod_relax <- maxent(x=myPredictors[c("bio1","bio4","bio11")],
+                     p=myResponse,
+                     path=paste0(getwd(),"/output/maxent_outputs3_prj_default"), 
+                     args=myparameters_relax ) 
 
+mod_default <- maxent(x=myPredictors[c("bio1","bio4","bio11")],
+                     p=myResponse,
+                     path=paste0(getwd(),"/output/maxent_outputs3_prj_relax"), 
+                     args=myparameters5_default ) 
 
-~~~
-Error in maxent(x = pder[c("bio1", "bio11")], p = pa, path = paste0(getwd(), : could not find function "maxent"
-~~~
-{: .error}
-
-
-
-~~~
-# plot the map
-ped <- raster(paste0("output/maxent_outputs3_prj2/species_studyarea.asc"))
+# load the projected map
+ped_default <- raster(paste0(getwd(),"/output/maxent_outputs3_prj_default/species_bioclim.asc"))
+ped_relax   <- raster(paste0(getwd(),"/output/maxent_outputs3_prj_relax/species_bioclim.asc"))
+plot(stack(ped_default,ped_relax))
 ~~~
 {: .language-r}
 
+<img src="../fig/rmd-specify_projection_layers2-1.png" title="plot of chunk specify_projection_layers2" alt="plot of chunk specify_projection_layers2" width="612" style="display: block; margin: auto;" />
 
+#### 6.4 Clamping function  
 
-~~~
-Error in .rasterObjectFromFile(x, band = band, objecttype = "RasterLayer", : Cannot create a RasterLayer object from this file. (file does not exist)
-~~~
-{: .error}
+When we project across space and time, we can come across conditions that are outside the range represented by the training data. Thus, we can clamp the response so that the model does not try to extapolate to these "extreme" conditions.  
+The response curve can vary, with turning on or off clamping.  
+~![]({{ page.root }}/fig/clampexample.png).   
 
-
-
-~~~
-plot(ped)
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in plot(ped): object 'ped' not found
-~~~
-{: .error}
-
-
-
-~~~
-# Check for differences if we used a different betamultiplier
-mod3_beta1 <- maxent(x=pder[c("bio1","bio11")], 
-               p=pa, 
-              path=paste0(getwd(),"/output/maxent_outputs3_prj3"), 
-              args=prepPara(userfeatures="LQ",
-                            betamultiplier=100, 
-                            ## for an extreme example, set beta as 100
-                            projectionlayers="/data/bioclim") ) 
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in maxent(x = pder[c("bio1", "bio11")], p = pa, path = paste0(getwd(), : could not find function "maxent"
-~~~
-{: .error}
-
-
-
-~~~
-ped3 <- raster(paste0("output/maxent_outputs3_prj3/species_bioclim.asc"))
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in .rasterObjectFromFile(x, band = band, objecttype = "RasterLayer", : Cannot create a RasterLayer object from this file. (file does not exist)
-~~~
-{: .error}
-
-
-
-~~~
-# Here we crop the extent of the larger prediction to the extent of the smaller prediction to look at differences between the two
-ped3 <- crop(ped3,extent(ped)) # "ped3"" is larger in extent, so crop it to the same extent of "ped""
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in crop(ped3, extent(ped)): object 'ped3' not found
-~~~
-{: .error}
-
-
-
-~~~
-plot(ped-ped3)
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in plot(ped - ped3): object 'ped' not found
-~~~
-{: .error}
-
-###4.4 Clamping function
-
-When we project across space and time, we can come across conditions that are outside the range represented by the training data. Thus, we can clamp the response so that the model does not try to extapolate to these "extreme" conditions.
-
-#####Thread 24
 
 ~~~
 # enable or disable clamping function; note that clamping function is involved when projecting. Turning the clamping function on, gives the response value associated with the marginal value at the edge of the data
-mod4_clamp <- maxent(x=pder[c("bio1","bio11")],
-                     p=pa,
-                     path=paste0(getwd(),"/output/maxent_outputs4_clamp"), 
-                     args=prepPara(userfeatures="LQ",
-                                   betamultiplier=1,
-                                   doclamp = TRUE,
-                                   projectionlayers="/data/bioclim")) 
-~~~
-{: .language-r}
+
+myparameters_clamp <- prepPara(userfeatures="LQ",
+                               betamultiplier=1,
+                               projectionlayers=paste0(getwd(),"/data/bioclim"),
+                               doclamp = TRUE
+                               )
+mod_clamp    <- maxent(x=myPredictors[c("bio1","bio11")],
+                       p=myResponse,
+                       path=paste0(getwd(),"/output/maxent_outputs4_clamp"), 
+                       args=myparameters_clamp  ) 
+
+myparameters_NOclamp <- prepPara(userfeatures="LQ",
+                               betamultiplier=1,
+                               projectionlayers=paste0(getwd(),"/data/bioclim"),
+                               doclamp = FALSE
+                               )
+mod_NOclamp <- maxent(x=myPredictors[c("bio1","bio11")],
+                      p=myResponse,
+                      path=paste0(getwd(),"/output/maxent_outputs4_NOclamp"), 
+                      args=myparameters_NOclamp  ) 
 
 
 
-~~~
-Error in maxent(x = pder[c("bio1", "bio11")], p = pa, path = paste0(getwd(), : could not find function "maxent"
-~~~
-{: .error}
-
-
-
-~~~
-mod4_noclamp <- maxent(x=pder[c("bio1","bio11")], 
-                       p=pa, 
-                       path=paste0(getwd(),"/output/maxent_outputs4_noclamp"),
-                       args=prepPara(userfeatures="LQ",
-                                      betamultiplier=1,
-                                      doclamp = FALSE,
-                                      projectionlayers="/data/bioclim") ) 
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in maxent(x = pder[c("bio1", "bio11")], p = pa, path = paste0(getwd(), : could not find function "maxent"
-~~~
-{: .error}
-
-
-
-~~~
 # Load the the two preditions and compare
-ped_clamp <- raster(paste0("output/maxent_outputs4_clamp/species_bioclim.asc") )
+ped_clamp <-   raster(paste0(getwd(),"/output/maxent_outputs4_clamp/species_bioclim.asc") )
+ped_noclamp <- raster(paste0(getwd(),"/output/maxent_outputs4_noclamp/species_bioclim.asc") )
+plot(ped_clamp - ped_noclamp) # we may notice small differences, especially clamp shows higher predictions in most areas.
+~~~
+{: .language-r}
+
+<img src="../fig/rmd-clamping_function-1.png" title="plot of chunk clamping_function" alt="plot of chunk clamping_function" width="612" style="display: block; margin: auto;" />
+
+#### 6.4 experiment of "high AUC" model  
+Here we simulate two size of training areas (large vs. small)
+
+~~~
+occ_buffer <- buffer(occ_final,width=4*10^5) #unit is meter
+clim_mask <- mask(clim, occ_buffer)
+set.seed(1) 
+bg_small <- sampleRandom(x=clim_mask,
+                   size=1000,
+                   na.rm=T, #removes the 'Not Applicable' points  
+                   sp=T) # return spatial points 
+set.seed(1) 
+bg_big <- sampleRandom(x=clim,
+                   size=1000,
+                   na.rm=T, #removes the 'Not Applicable' points  
+                   sp=T) # return spatial points 
+plot(clim[[1]])
+points(bg_big,col="black",cex=0.3)
+points(bg_small,col="blue",cex=0.3)
+~~~
+{: .language-r}
+
+<img src="../fig/rmd-experiment-1.png" title="plot of chunk experiment" alt="plot of chunk experiment" width="612" style="display: block; margin: auto;" />
+
+
+~~~
+# extracting env conditions
+env_occ_train <- extract(clim,occ_train)
+env_occ_test <- extract(clim,occ_test)
+
+# extracting env conditions for background
+env_bg_small <- extract(clim,bg_small)  
+env_bg_big   <- extract(clim,bg_big  )  
+
+# prepare data frame for maxent
+myPredictors_small <- data.frame(rbind(env_occ_train,env_bg_small))
+myPredictors_big   <- data.frame(rbind(env_occ_train,env_bg_big  ))
+
+myResponse_small <- c(rep(1,nrow(env_occ_train)),
+                     rep(0,nrow(env_bg_small))) 
+myResponse_big  <-  c(rep(1,nrow(env_occ_train)),
+                     rep(0,nrow(env_bg_big)))
+
+# set up the parameters
+myparameters <- prepPara(userfeatures="LQ",
+                          betamultiplier=1,
+                          projectionlayers=paste0(getwd(),"/data/bioclim")
+                         )
+
+# do the models
+mod_small    <- maxent(x=myPredictors_small[c("bio1","bio11")],
+                       p=myResponse_small,
+                       path=paste0(getwd(),"/output/maxent_outputs5_small"),
+                       args=myparameters) 
+
+mod_big      <- maxent(x=myPredictors_big[c("bio1","bio11")],
+                       p=myResponse_big,
+                       path=paste0(getwd(),"/output/maxent_outputs5_big"),
+                       args=myparameters) 
+
+# show the diff of small/big model
+ped_small <- raster(paste0(getwd(),"/output/maxent_outputs5_small/species_bioclim.asc"))
+ped_big   <- raster(paste0(getwd(),"/output/maxent_outputs5_big/species_bioclim.asc"))
+ped_diff <- ped_small-ped_big
+ped_combined <- stack(ped_small,ped_big,ped_diff)
+ped_combined <- crop(ped_combined,extent(-150,-30,-60,60))
+names(ped_combined) <- c("small_trainingArea","big_trainArea","difference")
+plot( ped_combined )
+~~~
+{: .language-r}
+
+<img src="../fig/rmd-experiment continue-1.png" title="plot of chunk experiment continue" alt="plot of chunk experiment continue" width="612" style="display: block; margin: auto;" />
+
+
+
+~~~
+# compare the AUC , extract test occ data, 
+mod_eval_small <- dismo::evaluate(p=env_occ_test,a=env_bg_small,model=mod_small) 
+mod_eval_big   <- dismo::evaluate(p=env_occ_test,a=env_bg_big,  model=mod_big) 
+cat("AUC of small training area is: ",mod_eval_small@auc )
 ~~~
 {: .language-r}
 
 
 
 ~~~
-Error in .rasterObjectFromFile(x, band = band, objecttype = "RasterLayer", : Cannot create a RasterLayer object from this file. (file does not exist)
-~~~
-{: .error}
-
-
-
-~~~
-ped_noclamp <- raster(paste0("output/maxent_outputs4_noclamp/species_bioclim.asc") )
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in .rasterObjectFromFile(x, band = band, objecttype = "RasterLayer", : Cannot create a RasterLayer object from this file. (file does not exist)
-~~~
-{: .error}
-
-
-
-~~~
-plot(stack(ped_clamp,ped_noclamp))
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in stack(ped_clamp, ped_noclamp): object 'ped_clamp' not found
-~~~
-{: .error}
-
-
-
-~~~
-plot(ped_clamp - ped_noclamp) 
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in plot(ped_clamp - ped_noclamp): object 'ped_clamp' not found
-~~~
-{: .error}
-
-
-
-~~~
-## we may notice small differences, especially clamp shows higher predictions in most areas.
-~~~
-{: .language-r}
-
-###4.5 Cross validation
-
-To test the robustness of the model settings, we can resample the training and testing data to replicate the model. How the data is resampled, can be specified by the user. Maxent can replicate using crossvalidation, bootstrapping, and subsampling.
-
-#####Thread 25
-
-~~~
-mod4_cross <- maxent(x=pder[c("bio1","bio11")], p=pa, 
-                            path=paste0(getwd(),"/output/maxent_outputs4_cross"), 
-                            args=prepPara(userfeatures="LQ",
-                                          betamultiplier=1,
-                                          doclamp = TRUE,
-                                          projectionlayers="/data/bioclim",
-                                          replicates=5, ## 5 replicates
-                                          replicatetype="crossvalidate") )
-                                          ##possible values are: crossvalidate,bootstrap,subsample
-~~~
-{: .language-r}
-
-AUC can be highly influenced by model parameters, specifically training area size. Here we compare two models using the same parameters and setting except we have manipulated the training area size.
-
-##5 experiment of "high AUC" model
-
-~~~
-# experiment 1: smaller training area vs. whole continent
-
-# Ruturn the path to the climate layers
-clim_list <- list.files("data/bioclim/",pattern=".bil$",full.names = T) 
-
-# stacking the bioclim variables to process them at one go 
-clim <- raster::stack(clim_list) 
-
-# model for smaller training area 
-small_extent <- buffer(occ_final,width=100000) #unit is meter 
-~~~
-{: .language-r}
-
-
-
-~~~
-Loading required namespace: rgeos
+AUC of small training area is:  0.7062616
 ~~~
 {: .output}
 
 
 
 ~~~
-big_extent <- extent(c(-130,-20,-60,60))
-
-small_area <- mask(clim,  small_extent)
-big_area   <- crop(clim,  big_extent)
-plot(small_area[[1]])
-~~~
-{: .language-r}
-
-<img src="../fig/rmd-experiment-1.png" title="plot of chunk experiment" alt="plot of chunk experiment" width="612" style="display: block; margin: auto;" />
-
-~~~
-plot(big_area[[1]])
-~~~
-{: .language-r}
-
-<img src="../fig/rmd-experiment-2.png" title="plot of chunk experiment" alt="plot of chunk experiment" width="612" style="display: block; margin: auto;" />
-
-~~~
-dir.create("data/big_extent")
-dir.create("data/small_extent")
-
-writeRaster(small_area,
-            # a series of names for output files
-            filename=paste0("data/small_extent/",names(small_area),".asc"), 
-            format="ascii", ## the output format
-            bylayer=TRUE, ## this will save a series of layers
-            overwrite=T)
-writeRaster(big_area,
-            # a series of names for output files
-            filename=paste0("data/big_extent/",names(big_area),".asc"), 
-            format="ascii", ## the output format
-            bylayer=TRUE, ## this will save a series of layers
-            overwrite=T)
-
-set.seed(1) 
-small_bg <- sampleRandom(x=small_area,
-                   size=10000,
-                   na.rm=T, #removes the 'Not Applicable' points  
-                   sp=T) # return spatial points 
-set.seed(1) 
-big_bg <- sampleRandom(x=big_area,
-                   size=10000,
-                   na.rm=T, #removes the 'Not Applicable' points  
-                   sp=T) # return spatial points 
-
-p <- extract(clim,occ_train) 
+cat("AUC of big   training area is: ",mod_eval_big@auc )
 ~~~
 {: .language-r}
 
 
 
 ~~~
-Error in extract(clim, occ_train): object 'occ_train' not found
+AUC of big   training area is:  0.8228738
 ~~~
-{: .error}
+{: .output}
 
-
-
-~~~
-a_small <- extract(clim,small_bg)  
-a_big <- extract(clim,big_bg)  
-
-pa_small <- c(rep(1,nrow(p)), rep(0,nrow(a_small))) 
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in nrow(p): object 'p' not found
-~~~
-{: .error}
-
-
-
-~~~
-pa_big   <- c(rep(1,nrow(p)), rep(0,nrow(a_big))) 
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in nrow(p): object 'p' not found
-~~~
-{: .error}
-
-
-
-~~~
-pder_small <- as.data.frame(rbind(p,a_small)) 
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in rbind(p, a_small): object 'p' not found
-~~~
-{: .error}
-
-
-
-~~~
-pder_big   <- as.data.frame(rbind(p,a_big)) 
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in rbind(p, a_big): object 'p' not found
-~~~
-{: .error}
-
-
-
-~~~
-small_mod <- maxent(x=pder_small,#[c("bio1","bio11")], 
-                    p=pa_small, 
-              path=paste0(getwd(),"/output/experiment_small"), 
-              args=prepPara(projectionlayers="/data/big_extent") 
-              )
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in maxent(x = pder_small, p = pa_small, path = paste0(getwd(), "/output/experiment_small"), : could not find function "maxent"
-~~~
-{: .error}
-
-
-
-~~~
-big_mod <- maxent(x=pder_big,#[c("bio1","bio11")], 
-                  p=pa_big, 
-                  path=paste0(getwd(),"/output/experiment_big"), 
-                  args=prepPara(projectionlayers="/data/big_extent") )
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in maxent(x = pder_big, p = pa_big, path = paste0(getwd(), "/output/experiment_big"), : could not find function "maxent"
-~~~
-{: .error}
-
-
-
-~~~
-# show the diff of small/big model
-ped_small <- raster("output/experiment_small/species_big_extent.asc")
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in .rasterObjectFromFile(x, band = band, objecttype = "RasterLayer", : Cannot create a RasterLayer object from this file. (file does not exist)
-~~~
-{: .error}
-
-
-
-~~~
-ped_big   <- raster("output/experiment_big/species_big_extent.asc")
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in .rasterObjectFromFile(x, band = band, objecttype = "RasterLayer", : Cannot create a RasterLayer object from this file. (file does not exist)
-~~~
-{: .error}
-
-
-
-~~~
-ped_combined <- stack(ped_small,ped_big)
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in stack(ped_small, ped_big): object 'ped_small' not found
-~~~
-{: .error}
-
-
-
-~~~
-names(ped_combined) <- c("small_trainingArea","big_trainArea")
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in names(ped_combined) <- c("small_trainingArea", "big_trainArea"): object 'ped_combined' not found
-~~~
-{: .error}
-
-
-
-~~~
-plot( ped_combined )
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in plot(ped_combined): object 'ped_combined' not found
-~~~
-{: .error}
-
-
-
-~~~
-# compare the AUC , extract test occ data, 
-p_test <- extract(clim,occ_test) 
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in extract(clim, occ_test): object 'occ_test' not found
-~~~
-{: .error}
-
-
-
-~~~
-mod_eval_small <- dismo::evaluate(p=p_test,a=a_small,model=small_mod) 
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in dismo::evaluate(p = p_test, a = a_small, model = small_mod): object 'p_test' not found
-~~~
-{: .error}
-
-
-
-~~~
-print(mod_eval_small)
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in print(mod_eval_small): object 'mod_eval_small' not found
-~~~
-{: .error}
-
-
-
-~~~
-mod_eval_big   <- dismo::evaluate(p=p_test,a=a_big,  model=big_mod) 
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in dismo::evaluate(p = p_test, a = a_big, model = big_mod): object 'p_test' not found
-~~~
-{: .error}
-
-
-
-~~~
-print(mod_eval_big)
-~~~
-{: .language-r}
-
-
-
-~~~
-Error in print(mod_eval_big): object 'mod_eval_big' not found
-~~~
-{: .error}
-
-
-> ## Challenge: use your occurrences to cut raster layers 
+> ## Challenge: train two maxent models with different parameters, and compare the predictions     
 > load occurrences & raster layers   
-> build a `600,000 meter` buffer around occurrences    
-> `mask` raster by the buffer of occurrences  
-> plot the masked raster  
+> build a `xxx meter` buffer around occurrences    
+> `mask` raster by the buffer of occurrences   
+> generate random samples from the masked raster using `sampleRandom()`  
+> `extract()` environmental conditions from raster by points  
+> re-format the environmental conditions as input for maxent  
+> train a `maxent` model  with different paremeters
+> use `devtools::source_url()` to load `prepPara()` function
+> use `prepPara()` function to set different features or beta-multiplier
+> use `prepPara()` function to set projection layers
+> `evaluate()` the model with testing environmental conditions  
 > > ## Solution
 > > 
 > > ~~~
 > > library("raster")
+> > library("dismo")
 > > 
+> > # prepare spatial occ data
 > > if(!file.exists("data/occ_raw.rdata")){
 > >   occ_raw <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE) 
 > >   save(occ_raw,file = "data/occ_raw.rdata")
@@ -929,22 +491,81 @@ Error in print(mod_eval_big): object 'mod_eval_big' not found
 > > myCRS1 <- CRS("+init=epsg:4326") # WGS 84
 > > crs(occ_final) <- myCRS1
 > > 
+> > # prepare raster data
 > > if( !file.exists( paste0("data/bioclim/bio_10m_bil.zip")   )){
 > >   utils::download.file(url="http://biogeo.ucdavis.edu/data/climate/worldclim/1_4/grid/cur/bio_10m_bil.zip",
 > >                        destfile="data/bioclim/bio_10m_bil.zip"   ) 
 > >   utils::unzip("data/bioclim/bio_10m_bil.zip",exdir="data/bioclim") 
 > > }
 > > 
-> > bio1 <- raster("data/bioclim/bio1.bil")
+> > # load rasters
+> > clim_list <- list.files("data/bioclim/",pattern=".bil$",full.names = T)
+> > clim <- raster::stack(clim_list) 
 > > 
-> > occ_buffer <- buffer(occ_final,width=6*10^5) #unit is meter
-> > bio1_mask <- mask(bio1, occ_buffer)
+> > occ_buffer <- buffer(occ_final,width=4*10^5) #unit is meter
+> > clim_mask <- mask(clim, occ_buffer)
 > > 
-> > plot(bio1_mask)
-> > plot(occ_buffer,add=T)
-> > plot(occ_final,add=T,col="blue")
+> > # extract environmental conditions
+> > set.seed(1) 
+> > bg <- sampleRandom(x=clim_mask,
+> >                    size=10000,
+> >                    na.rm=T, #removes the 'Not Applicable' points  
+> >                    sp=T) # return spatial points 
+> > 
+> > set.seed(1) 
+> > 
+> > # randomly select 50% for training
+> > selected <- sample(  1:nrow(occ_final),  nrow(occ_final)*0.5)
+> > 
+> > occ_train <- occ_final[selected,] # this is the selection to be used for model training
+> > occ_test <- occ_final[-selected,] # this is the opposite of the selection which will be used for model testing
+> > 
+> > # extracting env conditions
+> > env_occ_train <- extract(clim,occ_train)
+> > env_occ_test <- extract(clim,occ_test)
+> > 
+> > # extracting env conditions for background
+> > env_bg <- extract(clim,bg)  
+> > 
+> > #combine the conditions by row
+> > myPredictors <- rbind(env_occ_train,env_bg)
+> > 
+> > # change matrix to dataframe
+> > myPredictors <- as.data.frame(myPredictors)
+> > 
+> > # repeat the number 1 as many times as the number of rows in p, and repeat 0 for the rows of background points
+> > myResponse <- c(rep(1,nrow(env_occ_train)),
+> >                 rep(0,nrow(env_bg))) 
+> > 
+> > # training a maxent model with parameters
+> > myparameters1 <- prepPara(userfeatures="LQ",  
+> >                           betamultiplier=0.01,
+> >                           projectionlayers=paste0(getwd(),"/data/bioclim") )
+> > mymodel1 <- maxent(x=myPredictors[c("bio1","bio4","bio11")],
+> >                    p=myResponse,
+> >                    path=paste0(getwd(),"/output/maxent_homework1"), 
+> >                    args=myparameters1  ) 
+> > 
+> > myparameters2 <- prepPara(userfeatures="LQ",  
+> >                           betamultiplier=1000)
+> > mymodel2 <- maxent(x=myPredictors[c("bio1","bio4","bio11")],
+> >                      p=myResponse,
+> >                      path=paste0(getwd(),"/output/maxent_homework2"), 
+> >                      args=myparameters2  ) 
+> > 
+> > # evaluate model based on testing data
+> > mod_eval1 <- dismo::evaluate(p=env_occ_test,
+> >                                  a=env_bg,
+> >                                  model=mymodel1) 
+> > mod_eval2 <- dismo::evaluate(p=env_occ_test,
+> >                                  a=env_bg,
+> >                                  model=mymodel2) 
+> > 
+> > mod_eval1@auc
+> > mod_eval2@auc
 > > ~~~
 > > {: .language-r}
 > {: .solution}
 {: .challenge}
 {% include links.md %}
+

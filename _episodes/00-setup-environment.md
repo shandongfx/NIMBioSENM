@@ -155,4 +155,29 @@ setwd("D:/enmClass")
 > > ```
 > {: .solution}
 {: .challenge}
+
+#### 1.4 set up folders before we process data  
+It is recommended to setup a series of folders before you start a new project.  
+Here is an example from [Blog of Methods Ecology & Evolution](https://methodsblog.com/2016/10/05/reproducibility-with-r/):  
+![]({{ page.root }}/fig/folder-set-up.jpg).  
+
+
+```r
+if(!file.exists("code")) dir.create("code")
+if(!file.exists("data")) dir.create("data")
+if(!file.exists("data/bioclim")) dir.create("data/bioclim")
+if(!file.exists("data/studyarea")) dir.create("data/studyarea")
+if(!file.exists("output")) dir.create("output")
+```
+
+> ## Challenge 3: create a folder names "temp" 
+> 
+> > ## Solution
+> > 
+> > ```r
+> > dir.create("temp")
+> > ```
+> {: .solution}
+{: .challenge}
+
 {% include links.md %}

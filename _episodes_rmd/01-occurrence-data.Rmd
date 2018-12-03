@@ -72,7 +72,7 @@ The great thing is, you could query many databases at one time using [spocc](htt
 #### 2.3 occurrence data in Darwin Core  
 Take a look at the columns of the GBIF occurrences.
 ```{r columns, message=FALSE, warning=FALSE}
-names(occ_raw)
+names(occ_raw) [1:20 ]
 ```
 The meaning of those columns/terms are defined by Darwin Core. Refer to [Darwin Core quick reference guide](https://dwc.tdwg.org/terms/) for more information.  
 
@@ -137,26 +137,6 @@ summary(occ_final$year)
 
 
 
-> ## Challenge: Download occurrences from GBIF and filter data
-> select your favorite species  
-> only keep `specimen` records  
-> only keep records that are collected between `2000 & 2018`  
-> only keep records that have `valid longitude & latitude`  
-> > ## Solution
-> > ```{r check_setups, echo=TRUE,eval=FALSE}
-> > # download 
-> > myocc <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE) 
-> >  
-> > # filter 
-> > myocc_final <- subset(myocc,basisOfRecord=="PRESERVED_SPECIMEN" &
-> >                             year >= 2000 & year <= 2018 &
-> >                             !is.na(lat) & !is.na(lon)    )
-> > 
-> > # show number of records that are removed 
-> > nrow(myocc) - nrow(myocc_final)                          
-> > ```
-> {: .solution}
-{: .challenge}
 
 #### 2.5 make occurrence data **spatial**
 make occ spatial, assign coordinate reference system to *spatial points*
@@ -175,8 +155,7 @@ cat("the new object is: ",class(occ_final),"\n" )
 we could view the coordinates and the data that are associated with the spatial object
 ```{r occ-spatial2.1}
 head(occ_final@coords)
-head(occ_final@data)
-
+#head(occ_final@data)
 ```
 
 read the CRS of the spatial object; it is `NA` because it has not been defined.
@@ -202,21 +181,65 @@ crs(occ_final)
 ```
 
 after defineing the CRS, we can do CRS projecitons
-```{r occ-spatial6}
+```{r occ-spatial6,fig.height = 4, fig.align = "center"}
 occ_final_projected <- spTransform(occ_final, myCRS3)
 plot(occ_final)
 plot(occ_final_projected)
 ```
+
 after we transform a dataframe into a spatial object, we can still subset it by column; for example, here we only keep occurrences north of the Equator  
-```{r occ-spatial7}
+```{r occ-spatial7,fig.height = 4,  fig.align = "center"}
 occ_north <- subset(occ_final, occ_final@coords[,2] >=0)
 plot(occ_north)
 ```
+
 or we can subset by year
-```{r occ-spatial8}
+```{r occ-spatial8,fig.height = 4, fig.align = "center"}
 occ_1990 <- subset(occ_final, year ==1990)
 plot(occ_1990)
 ```
 
+#### 2.6 read/write shapefile files
+```{r shapefile,warning=FALSE}
+dir.create("temp")
+shapefile(occ_final,"temp/occ_final.shp",overwrite=TRUE)
+loaded_shapefile <- shapefile("temp/occ_final.shp")
+```
 
+> ## Challenge: Download occurrences from GBIF and filter data
+> select your favorite species  
+> only keep `specimen` records  
+> only keep records that are collected between `2000 & 2018`  
+> only keep records that have `valid longitude & latitude`  
+> make the occ spatial
+> assign WGS84 as the crs of the occurrences
+> save the spatial object as "myocc_final.shp" in folder "temp"
+> > ## Solution
+> > ```{r check_setups, echo=TRUE,eval=FALSE}
+> > # download 
+> > myocc <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE) 
+> >  
+> > # filter 
+> > myocc_final <- subset(myocc,basisOfRecord=="PRESERVED_SPECIMEN" &
+> >                             year >= 2000 & year <= 2018 &
+> >                             !is.na(lat) & !is.na(lon)    )
+> > 
+> > # show number of records that are removed 
+> > nrow(myocc) - nrow(myocc_final)     
+> > 
+> > # make it spatial
+> > coordinates(myocc_final) <- ~ lon + lat
+> > 
+> > # define CRS
+> > myCRS1 <- CRS("+init=epsg:4326") # WGS 84
+> > 
+> > # assign CRS to your occ
+> > crs(myocc_final) <- myCRS1
+> > 
+> > # write shapefile
+> > dir.create("temp")
+> > shapefile(myocc_final,"temp/myocc_final.shp")
+> > ```
+> {: .solution}
+{: .challenge}
 {% include links.md %}

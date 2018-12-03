@@ -1,0 +1,220 @@
+---
+source: Rmd
+title: "Raster data"
+teaching: 10
+exercises: 5
+questions:
+- "How to process raster data in R?"
+objectives:
+- "read/write raster data"
+- "raster calculation"
+- "Crop raster by polygon"
+- "extract env by occ"
+
+keypoints:
+- "111111"
+- "22222"
+---
+
+```{r load pk,message=FALSE,warning=FALSE,echo=FALSE}
+source("../bin/chunk-options.R")
+```
+
+## 3 Raster data   
+
+#### 3.1 load libraries and set up folders 
+```{r create-folders, message=FALSE, warning=FALSE}
+library("raster")
+require(utils)
+if(!file.exists("data")) dir.create("data")
+if(!file.exists("data/bioclim")) dir.create("data/bioclim")
+if(!file.exists("data/studyarea")) dir.create("data/studyarea")
+if(!file.exists("output")) dir.create("output")
+```
+
+
+#### 3.2 download data   
+In our example, we use bioclimatic variables (downloaded from worldclim.org) as input environmental layers. We stack our environmental layers so that they can be processed simultaneously.  
+
+We use `download.file()` to directly download worldclim data, and used `unzip()` to unzip the zipped file
+```{r dl_rasters, message=FALSE, warning=FALSE}
+# download climate data from worldclim.org
+if( !file.exists( paste0("data/bioclim/bio_10m_bil.zip")   )){
+  utils::download.file(url="http://biogeo.ucdavis.edu/data/climate/worldclim/1_4/grid/cur/bio_10m_bil.zip",
+                       destfile="data/bioclim/bio_10m_bil.zip"   ) 
+  utils::unzip("data/bioclim/bio_10m_bil.zip",exdir="data/bioclim") 
+}
+```
+
+#### 3.3 read/write raster files  
+read one raster file at one time  
+```{r write_rasters, message=FALSE, warning=FALSE}
+test1 <- raster("data/bioclim/bio1.bil")
+dir.create("temp")
+writeRaster(test1,"temp/bio1.bil",overwrite=TRUE)
+writeRaster(test1,"temp/bio1.tiff",overwrite=TRUE)
+```
+You can write our different type of rasters:  
+![]({{ page.root }}/fig/rastertype.png). 
+
+
+read 19 layers at one time  
+```{r write_rasters2, message=FALSE, warning=FALSE}
+# search files with .bil file extension
+clim_list <- list.files("data/bioclim/",pattern=".bil$",full.names = T)
+
+# stacking the bioclim variables to process them at one go 
+clim <- raster::stack(clim_list) 
+```
+
+
+
+#### 3.4 basis information of a raster  
+```{r raster_info1}
+bio1 <- raster("data/bioclim/bio1.bil")
+bio1
+```
+
+read number of rows  
+```{r raster_info2}
+nrow(bio1)
+```
+
+read number of columns  
+```{r raster_info3}
+ncol(bio1)
+```
+
+read extent
+```{r raster_info4}
+extent(bio1)
+```
+
+read CRS (coordinate reference system)  
+```{r raster_info5}
+crs(bio1)
+```
+
+read resolution
+```{r raster_info6}
+res(bio1)
+```
+
+
+#### 3.5 resample raster   
+we want the new layer to be 10 times coarser at each axis (i.e., 100 times coarser). In essence, we are resampling the resolution from 10 min to 100 min.
+
+```{r raster_manipulation}
+bio1 <- raster("data/bioclim/bio1.bil")
+
+# define new resolution
+newRaster <- raster( nrow= nrow(bio1)/10 , ncol= ncol(bio1)/10 )
+
+# define the extent of the new coarser resolution raster
+extent(newRaster) <- extent(bio1)
+
+# fill the new layer with new values
+newRaster <- resample(x=bio1,y=newRaster,method='bilinear')
+
+# when viewing the new layer, we see that it appears coarser
+plot(bio1)
+plot(newRaster) 
+```
+
+#### 3.6 reclassify raster layer     
+to a binary layer: areas that are higher than 100 va. areas that are lower than 100
+```{r reclassify_raster1}
+myLayer<- raster("data/bioclim/bio1.bil")
+
+binaryMap <-   myLayer>= 100
+
+plot(binaryMap)
+```
+
+based on many threholds
+```{r reclassify_raster2}
+
+# values smaller than 0 becomes 0; 
+# values between 0 and 100 becomes 1; 
+# values between 100 and 200 becomes 2;
+# values larger than 200 becomes 3;
+
+myMethod <- c(-Inf,  0, 0, # from, to, new value
+              0,   100, 1,
+              100, 200, 2,
+              200, Inf, 3)
+myLayer_classified <- reclassify(myLayer,rcl= myMethod)
+plot(myLayer_classified)
+```
+
+#### 3.7 raster calculation    
+
+```{r raster_calculation}
+wet <- raster("data/bioclim/bio13.bil") # precipitation of wettest month
+dry <- raster("data/bioclim/bio14.bil") # precipitation of driest month
+
+# To calculate difference between these two rasters
+diff <- wet - dry
+names(diff) <- "diff"
+
+# To calculate the mean between the dry and wet rasters
+twoLayers <- stack(wet,dry)
+meanPPT1 <- calc(twoLayers,fun=mean)
+names(meanPPT1) <- "mean"
+
+# the following code gives the same results
+meanPPT2 <-  (wet + dry)/2
+names(meanPPT2) <- "mean"
+
+layers_to_plot <- stack(wet, dry, diff, meanPPT1,meanPPT2)
+plot(layers_to_plot)
+
+```
+
+#### 3.8  correlations between layers   
+```{r raster_correlation}
+# search files with *.bil* file extension
+clim_list <- list.files("data/bioclim/",pattern=".bil$",full.names = T)
+
+# stacking the bioclim variables to process them at one go 
+clim <- raster::stack(clim_list) 
+
+# select the first 5 layers
+clim_subset <- clim[[1:5]]
+
+# to run correlations between different layers
+raster::pairs(clim_subset,maxpixels=1000) # the default is maxpixels=100000
+
+```
+
+
+> ## Challenge: download and process worldclim data  
+> download worldclim_V1.4 10m resolution bioclimatic layers   
+> read BIO5 (Max Temperature of Warmest Month) & BIO6 (Min Temperature of Coldest Month)   
+> calculate the `difference` between the two layers  
+> save the `difference` as `difference.tiff` in folder `temp`  
+> > ## Solution
+> > ```{r check_setups, echo=TRUE,eval=FALSE}
+> > dir.create("data")
+> > dir.create("data/bioclim")
+> > 
+> > # download 
+> > utils::download.file(url="http://biogeo.ucdavis.edu/data/climate/worldclim/1_4/grid/cur/bio_10m_bil.zip",
+> >                       destfile="data/bioclim/bio_10m_bil.zip"   ) 
+> > utils::unzip("data/bioclim/bio_10m_bil.zip",exdir="data/bioclim") 
+> > 
+> > # load rasters 
+> > library(raster)
+> > bio5 <- raster("data/bioclim/bio5.bil")
+> > bio6 <- raster("data/bioclim/bio6.bil")
+> > 
+> > # calculate the differences
+> > difference <- bio5 - bio6
+> > 
+> > # save the raster file
+> > dir.create("temp")
+> > writeRaster(difference,"temp/difference.tiff")
+> > ```
+> {: .solution}
+{: .challenge}
+{% include links.md %}

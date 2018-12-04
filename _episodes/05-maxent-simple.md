@@ -22,6 +22,8 @@ keypoints:
 
 
 
+![]({{ page.root }}/fig/wrong.jpg). 
+
 ## 5.0 Prepare occ & raster 
 
 ~~~

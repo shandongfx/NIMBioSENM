@@ -36,7 +36,7 @@ if(!file.exists("output")) dir.create("output")
 
 
 ## 3.2 Download data   
-In our example, we use bioclimatic variables (downloaded from worldclim.org) as input environmental layers. We stack our environmental layers so that they can be processed simultaneously.  
+In our example, we use bioclimatic variables (downloaded from worldclim.org) as input environmental layers.   
 
 We use `download.file()` to directly download worldclim data, and used `unzip()` to unzip the zipped file
 

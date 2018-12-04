@@ -22,6 +22,8 @@ keypoints:
 source("../bin/chunk-options.R")
 ```
 
+![]({{ page.root }}/fig/wrong.jpg). 
+
 ## 5.0 Prepare occ & raster 
 ```{r occraster1, message=FALSE, warning=FALSE}
 library("raster")

@@ -110,7 +110,7 @@ A few columns to highlight:
   * The four-digit year in which the Event occurred, according to the Common Era Calendar.
 
 * `lat` and `lon` (or `decimalLongitude`,`decimalLatitude` in Darwin Core)  
-  *The geographic longitude/latitude of the geographic center of a Location. Positive values are  east of the Greenwich Meridian/north of the Equator, negative values are west/south of it. Legal values lie between [-180 180] / [-90 90], inclusive.
+  * The geographic longitude/latitude of the geographic center of a Location. Positive values are  east of the Greenwich Meridian/north of the Equator, negative values are west/south of it. Legal values lie between [-180 180] / [-90 90], inclusive.
 
 ## 2.4 Clean occurrence data
 Since some of our records do not have appropriate coordinates and some have missing locational data, we need to remove them from our dataset. To do this, we created a new dataset named “occ_clean”, which is a subset of the “occ_raw” dataset where records with missing latitude and/or longitude are removed.  
@@ -193,11 +193,6 @@ hist(occ_unique_specimen$year)
 {: .language-r}
 
 <img src="../fig/rmd-clean_data5-1.png" title="plot of chunk clean_data5" alt="plot of chunk clean_data5" width="432" style="display: block; margin: auto;" />
-
-~~~
-#ggplot2()
-~~~
-{: .language-r}
 
 
 to filter the species records by year, in this example 1950 to 2000:
@@ -289,6 +284,8 @@ head(occ_final@coords)
 ~~~
 {: .language-r}
 
+![]({{ page.root }}/fig/crsexample.jpg)  
+
 read the CRS of the spatial object; it is `NA` because it has not been defined.  
 
 ~~~
@@ -314,7 +311,7 @@ myCRS3 <- CRS("+init=epsg:3413") # WGS 84 / NSIDC Sea Ice Polar Stereographic No
 ~~~
 {: .language-r}
 You can full reference list from [spatialreference.org website](http://spatialreference.org/ref/).  
-![]({{ page.root }}/fig/crslist.png).  
+![]({{ page.root }}/fig/crslist.png)  
  
 assign the Coordinate Reference System (CRS) to our occ spatial object 
 

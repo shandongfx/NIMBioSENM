@@ -4,12 +4,12 @@
 source: Rmd
 title: "Occurrence data"
 teaching: 10
-exercises: 5
+exercises: 10
 questions:
-- "How to process occurrence data in R?"
+- "let's get occurrence data in R"
 objectives:
-- "Download occurrence data through API."
-- "Filter occurrance data."
+- "download occurrence data through API."
+- "filter occurrance data."
 keypoints:
 - "111111"
 - "22222"
@@ -17,11 +17,17 @@ keypoints:
 
 
 
-## 2 Occurrence data  
-#### 2.1 Download occurrence data  
+## 2.1 API    
+### ~1 billion biodiversity records on GBIF.org  
+![]({{ page.root }}/fig/gbif1b.png).  
 
-(fix me) add a decription about biodiversity databases; a figure about GBIF; a list of databases; what is api;  
+### What is an API looks like?  
+put this in Chrome/IE: `http://api.gbif.org/v1/occurrence/search?year=1800,1899`  
 
+What is an **API**? (Application Programming Interface)  
+API is the acronym for Application Programming Interface, which is a software intermediary that allows two applications to talk to each other. Each time you use an app like Facebook, send an instant message, or check the weather on your phone, you’re using an API.  
+
+## 2.1 Download occurrence data  
 `gbif()` is a function in `dismo` package, which can directly download occurrences through GBIF api; here we query the number of records of the nine-banded armadillo, **without downloading**  
 
 ~~~
@@ -32,7 +38,7 @@ gbif(genus="Dasypus",species="novemcinctus",download=FALSE)
 
 
 ~~~
-[1] 7508
+[1] 7520
 ~~~
 {: .output}
 
@@ -54,7 +60,7 @@ head( occ_raw )
 {: .language-r}
 
 
-#### 2.2 List of biodiversity databases and their R package.  
+## 2.2 List of biodiversity databases and their R package.  
 
 Table 1. List of biodiversity databases and their R package. 
 
@@ -70,7 +76,7 @@ Table 1. List of biodiversity databases and their R package.
    
 The great thing is, you could query many databases at one time using [spocc](https://github.com/ropensci/spocc) package, developed by [*rOpenSci*](https://ropensci.org/packages/)
 
-#### 2.3 occurrence data in Darwin Core  
+## 2.3 Occurrence data in Darwin Core  
 Take a look at the columns of the GBIF occurrences.
 
 ~~~
@@ -106,7 +112,7 @@ A few columns to highlight:
 * `lat` and `lon` (or `decimalLongitude`,`decimalLatitude` in Darwin Core)  
   *The geographic longitude/latitude of the geographic center of a Location. Positive values are  east of the Greenwich Meridian/north of the Equator, negative values are west/south of it. Legal values lie between [-180 180] / [-90 90], inclusive.
 
-#### 2.4 Clean occurrence data
+## 2.4 Clean occurrence data
 Since some of our records do not have appropriate coordinates and some have missing locational data, we need to remove them from our dataset. To do this, we created a new dataset named “occ_clean”, which is a subset of the “occ_raw” dataset where records with missing latitude and/or longitude are removed.  
 
 ~~~
@@ -122,7 +128,7 @@ cat(nrow(occ_raw)-nrow(occ_clean), "records are removed")
 
 
 ~~~
-2432 records are removed
+2401 records are removed
 ~~~
 {: .output}
 
@@ -138,7 +144,7 @@ cat(nrow(occ_clean)-nrow(occ_unique), "records are removed")
 
 
 ~~~
-1459 records are removed
+1472 records are removed
 ~~~
 {: .output}
   
@@ -155,11 +161,11 @@ table(occ_unique$basisOfRecord)
 ~~~
 
     FOSSIL_SPECIMEN   HUMAN_OBSERVATION     LIVING_SPECIMEN 
-                 13                2433                   1 
+                 13                2444                   1 
 MACHINE_OBSERVATION         OBSERVATION  PRESERVED_SPECIMEN 
-                 33                  27                 901 
+                 33                  27                 921 
             UNKNOWN 
-                209 
+                208 
 ~~~
 {: .output}
   
@@ -175,7 +181,7 @@ cat(nrow(occ_unique_specimen), "out of ", nrow(occ_unique), "records are specime
 
 
 ~~~
-901 out of  3617 records are specimen
+921 out of  3647 records are specimen
 ~~~
 {: .output}
 
@@ -219,7 +225,7 @@ summary(occ_final$year)
 
 
 
-#### 2.5 make occurrence data **spatial**
+## 2.5 Make occurrence data **spatial**  
 make occ spatial, assign coordinate reference system to *spatial points*
 
 ~~~
@@ -267,12 +273,12 @@ head(occ_final@coords)
 
 ~~~
             lon      lat
-3439 -100.51001 31.30495
-3440 -104.51337 19.13245
-3444 -103.90280 19.16453
-3446  -94.82222 16.43611
-3448  -90.88333 16.15000
-3454 -100.55574 31.52139
+3452  -84.55206 10.49557
+3454 -104.51337 19.13245
+3458 -100.51001 31.30495
+3459 -103.90280 19.16453
+3462  -90.88333 16.15000
+3467  -94.82222 16.43611
 ~~~
 {: .output}
 
@@ -283,7 +289,7 @@ head(occ_final@coords)
 ~~~
 {: .language-r}
 
-read the CRS of the spatial object; it is `NA` because it has not been defined.
+read the CRS of the spatial object; it is `NA` because it has not been defined.  
 
 ~~~
 crs(occ_final)
@@ -297,7 +303,7 @@ CRS arguments: NA
 ~~~
 {: .output}
 
-now we define a CRS object
+now we define a CRS object  
 
 ~~~
 # Define the coordinate system that will be used. Here we show several examples:
@@ -364,7 +370,7 @@ plot(occ_1990)
 
 <img src="../fig/rmd-occ-spatial8-1.png" title="plot of chunk occ-spatial8" alt="plot of chunk occ-spatial8" width="612" style="display: block; margin: auto;" />
 
-#### 2.6 read/write shapefile files
+## 2.6 Read/Write shapefile files  
 
 ~~~
 dir.create("temp")
@@ -374,16 +380,19 @@ loaded_shapefile <- shapefile("temp/occ_final.shp")
 {: .language-r}
 
 > ## Challenge: Download occurrences from GBIF and filter data
-> select your favorite species  
-> only keep `specimen` records  
-> only keep records that are collected between `2000 & 2018`  
-> only keep records that have `valid longitude & latitude`  
-> make the occ spatial
-> assign WGS84 as the crs of the occurrences
-> save the spatial object as "myocc_final.shp" in folder "temp"
+> --select your favorite species  
+> --only keep `specimen` records  
+> --only keep records that are collected between `2000 & 2018`  
+> --only keep records that have `valid longitude & latitude`  
+> --make the occ spatial
+> --assign WGS84 as the crs of the occurrences
+> --save the spatial object as "myocc_final.shp" in folder "temp"
 > > ## Solution
 > > 
 > > ~~~
+> > library(dismo)
+> > library(raster)
+> > 
 > > # download 
 > > myocc <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE) 
 > >  

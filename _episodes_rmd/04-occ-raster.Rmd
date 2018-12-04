@@ -1,16 +1,16 @@
 ---
 source: Rmd
-title: "Prepare data input for ENM"
-teaching: 10
-exercises: 5
+title: "Spatial analysis"
+teaching: 15
+exercises: 10
 questions:
-- "How to analyze occurrence and raster data?"
+- "play with spatial points & rasters in R"
 objectives:
 - "plot occ & raster together"
-- "extract environmental conditions from raster layers"
+- "extract environmental conditions of occ raster layers"
 - "crop raster layers"
 - "draw background samples"
-- "format data input for Maxent"
+- "randomly separate samples"
 
 keypoints:
 - "111111"
@@ -21,9 +21,7 @@ keypoints:
 source("../bin/chunk-options.R")
 ```
 
-## 4 Prepare data input for ENM   
-
-#### 4.0 prepare occ & raster 
+## 4.0 Prepare occ & raster 
 ```{r occraster1, message=FALSE, warning=FALSE}
 library("raster")
 
@@ -51,13 +49,13 @@ bio1 <- raster("data/bioclim/bio1.bil")
 
 ```
 
-#### 4.1 plot occ & raster together  
+## 4.1 Plot occ & raster together  
 ```{r plottogether, fig.height=5}
 plot(bio1)
 plot(occ_final,add=T)
 ```
 
-#### 4.2 extract environmental conditions from raster layers  
+## 4.2 Extract environmental conditions of occ raster layers    
 use `extract()` function to extract environmental conditions of occurrences  
 ```{r extract occ}
 # load bioclimatic layers
@@ -78,7 +76,7 @@ conditions_occ[bad_records,]
 occ_final <- occ_final[!bad_records,]
 ```
 
-#### 4.3 crop raster layers  
+## 4.3 Crop raster layers  
 use `crop()` function to crop a raster layer   
 ```{r crop raster1}
 bio1 <- raster("data/bioclim/bio1.bil")
@@ -111,7 +109,7 @@ occ_buffer <- buffer(occ_final,width=5*10^5) #unit is meter
 clim_mask <- mask(clim, occ_buffer)
 ```
 
-#### 4.4 draw background samples  
+## 4.4 Draw background samples  
 use `sampleRandom()` function to select background points from the new buffered study area; the number provided in the `size`.  
 use `set.seed()` before random sampling to guarantee the same random sample	  	
 ```{r select bg}
@@ -132,7 +130,7 @@ plot(bg,add=T,col="black")
 plot(occ_final,add=T,col="red")
 ```
 
-#### 4.5 Split occurrence data into training & testing
+## 4.5 Split occurrence data into training & testing
 We randomly selected **50%** of the occurrence data for model training and used the remaining **50%** for model testing. To make our experiment reproducible (i.e., select the same set of points), we used a static seed via the `set.seed()` function.  
 
 ```{r cut_occ_into_training_testing}
@@ -150,7 +148,7 @@ plot(occ_test,col="red",add=T)
 
 an alternative method, **block cut**, distributes the training and testing more equally across the study exent. This function is part of the `ENMeval` package.  
 
-```{r cut_occ_into_training_testing2}
+```{r cut_occ_into_training_testing2,message=F}
 library(ENMeval)
 cut_block <- ENMeval::get.block(occ=as.data.frame(occ_final@coords), 
                        bg.coords=as.data.frame(bg@coords))
@@ -167,13 +165,17 @@ plot(subset(occ_final,cut_block==4),col=4,add=T)
 
 
 > ## Challenge: use your occurrences to cut raster layers 
-> load occurrences & raster layers   
-> build a `600,000 meter` buffer around occurrences    
-> `mask` raster by the buffer of occurrences  
-> plot the masked raster  
+> --load occurrences & raster layers   
+> --build a `600,000 meter` buffer around occurrences    
+> --`mask` raster by the buffer of occurrences  
+> --plot the masked raster  
 > > ## Solution
 > > ```{r, echo=TRUE,eval=FALSE}
-> > library("raster")
+> > library(dismo)
+> > library(raster)
+> > 
+> > dir.create("data")
+> > dir.create("data/bioclim")
 > > 
 > > if(!file.exists("data/occ_raw.rdata")){
 > >   occ_raw <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE) 

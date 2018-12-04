@@ -7,21 +7,19 @@ teaching: 2
 exercises: 1
 
 questions:
-- "How to get R ready?"
+- "becomes an R user!"
 
 objectives:
-- "Load packages."
-- "Set up the Maxent path."
-- "Set up working directory."
+- "load packages."
+- "set up the Maxent path."
+- "set up working directory."
 
 keypoints:
 - ""
 ---
-## 1. Set up the working environment  
-### 1.1 Load packages  
+## 1.1 Load packages  
 Running Maxent in R requires several packages. Specifically, the "dismo" package, which contains *maxent* function that calls *maxent.jar* in R, the *raster* package, which provides functions for analyzing gridded data, the *rgeos* package, which provides functions for analyzing spatial data.
 
-##### Thread 1
 
 ```r
 packages_needed <- c("raster", # for raster analysis
@@ -46,7 +44,6 @@ library("ENMeval")
 #library("wallace")
 ```
 																												   
-##### Thread 2
 
 ```r
 if( !("rJava" %in% rownames(installed.packages()))  ){
@@ -60,7 +57,6 @@ if(Sys.info()["sysname"] != "Windows" ){
 library("rJava")
 ```
 
-##### Thread 3
 
 ```r
 if(!require(devtools)){
@@ -74,10 +70,9 @@ if(!require(kuenm)){
 library("kuenm")
 ```
 
-### 1.2 Set up the Maxent path  
+## 1.2 Set up the Maxent path  
 In order for Maxent to work properly in R, the *maxent.jar* file needs to be accessible by *dismo* package.  
 
-##### Thread 4  
 
 ```r
 # download maxent.jar 3.3.3k, and place the file in the desired folder; note that, there may be a newer version of Maxent
@@ -92,6 +87,35 @@ utils::download.file(url="https://raw.githubusercontent.com/mrmaxent/Maxent/mast
 # options( java.parameters = c("-Xss2560k", "-Xmx2g") ) 
 ```
 
+## 1.3 Set up the working directory of R  
+By seting the working directory of R, we can directly use relative path to read/write data within this folder.    
+For example: an absolute path looks like this:  
+`D:/work/project/armadillo/model/occurrence.csv`  
+if we set the working directory as `D:/work/project/armadillo`, then the relative path will be:  
+`model/occurrence.csv`   
+
+
+```r
+setwd("~/enmClass")
+#or
+setwd("D:/enmClass")
+
+# note: the folder should exist, before you set it up.
+```
+
+## 1.4 set up folders before we process data  
+It is recommended to setup a series of folders before you start a new project.  
+Here is an example from [Blog of Methods Ecology & Evolution](https://methodsblog.com/2016/10/05/reproducibility-with-r/):  
+![]({{ page.root }}/fig/folder-set-up.jpg).  
+
+
+```r
+if(!file.exists("code")) dir.create("code")
+if(!file.exists("data")) dir.create("data")
+if(!file.exists("data/bioclim")) dir.create("data/bioclim")
+if(!file.exists("data/studyarea")) dir.create("data/studyarea")
+if(!file.exists("output")) dir.create("output")
+```
 
 > ## Challenge 1: check if packages are setup?
 > Run a simple Maxent model from R terminal
@@ -118,24 +142,6 @@ utils::download.file(url="https://raw.githubusercontent.com/mrmaxent/Maxent/mast
 > {: .solution}
 {: .challenge}
 
-
-### 1.3 Set up the working directory of R  
-By seting the working directory of R, we can directly use relative path to read/write data within this folder.    
-For example: an absolute path looks like this:  
-`D:/work/project/armadillo/model/occurrence.csv`  
-if we set the working directory as `D:/work/project/armadillo`, then the relative path will be:  
-`model/occurrence.csv`   
-
-##### Thread 5
-
-```r
-setwd("~/enmClass")
-#or
-setwd("D:/enmClass")
-
-# note: the folder should exist, before you set it up.
-```
-
 > ## Challenge 2: Setup a working directory in R.
 > create a folder on your computer, and set it as the default working directory
 > > 
@@ -156,19 +162,6 @@ setwd("D:/enmClass")
 > {: .solution}
 {: .challenge}
 
-#### 1.4 set up folders before we process data  
-It is recommended to setup a series of folders before you start a new project.  
-Here is an example from [Blog of Methods Ecology & Evolution](https://methodsblog.com/2016/10/05/reproducibility-with-r/):  
-![]({{ page.root }}/fig/folder-set-up.jpg).  
-
-
-```r
-if(!file.exists("code")) dir.create("code")
-if(!file.exists("data")) dir.create("data")
-if(!file.exists("data/bioclim")) dir.create("data/bioclim")
-if(!file.exists("data/studyarea")) dir.create("data/studyarea")
-if(!file.exists("output")) dir.create("output")
-```
 
 > ## Challenge 3: create a folder names "temp" 
 > 

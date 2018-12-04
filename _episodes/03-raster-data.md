@@ -4,14 +4,16 @@
 source: Rmd
 title: "Raster data"
 teaching: 10
-exercises: 5
+exercises: 10
 questions:
-- "How to process raster data in R?"
+- "load raster in R"
 objectives:
 - "read/write raster data"
+- "raster metadata"
+- "raster resample"
+- "raster reclassification"
 - "raster calculation"
-- "Crop raster by polygon"
-- "extract env by occ"
+- "raster correlation"
 
 keypoints:
 - "111111"
@@ -20,9 +22,7 @@ keypoints:
 
 
 
-## 3 Raster data   
-
-#### 3.1 load libraries and set up folders 
+## 3.1 Load libraries and set up folders 
 
 ~~~
 library("raster")
@@ -35,7 +35,7 @@ if(!file.exists("output")) dir.create("output")
 {: .language-r}
 
 
-#### 3.2 download data   
+## 3.2 Download data   
 In our example, we use bioclimatic variables (downloaded from worldclim.org) as input environmental layers. We stack our environmental layers so that they can be processed simultaneously.  
 
 We use `download.file()` to directly download worldclim data, and used `unzip()` to unzip the zipped file
@@ -50,7 +50,7 @@ if( !file.exists( paste0("data/bioclim/bio_10m_bil.zip")   )){
 ~~~
 {: .language-r}
 
-#### 3.3 read/write raster files  
+## 3.3 Read/Write raster files  
 read one raster file at one time  
 
 ~~~
@@ -60,9 +60,6 @@ writeRaster(test1,"temp/bio1.bil",overwrite=TRUE)
 writeRaster(test1,"temp/bio1.tiff",overwrite=TRUE)
 ~~~
 {: .language-r}
-You can write our different type of rasters:  
-![]({{ page.root }}/fig/rastertype.png). 
-
 
 read 19 layers at one time  
 
@@ -75,9 +72,11 @@ clim <- raster::stack(clim_list)
 ~~~
 {: .language-r}
 
+You can write many different type of rasters:  
+![]({{ page.root }}/fig/rastertype.png). 
 
 
-#### 3.4 basis information of a raster  
+## 3.4 Basic information of a raster  
 
 ~~~
 bio1 <- raster("data/bioclim/bio1.bil")
@@ -175,8 +174,8 @@ res(bio1)
 {: .output}
 
 
-#### 3.5 resample raster   
-we want the new layer to be 10 times coarser at each axis (i.e., 100 times coarser). In essence, we are resampling the resolution from 10 min to 100 min.
+## 3.5 Resample raster   
+We want the new layer to be 10 times coarser at each axis (i.e., 100 times coarser). In essence, we are resampling the resolution from 10 min to 100 min.
 
 
 ~~~
@@ -205,8 +204,8 @@ plot(newRaster)
 
 <img src="../fig/rmd-raster_manipulation-2.png" title="plot of chunk raster_manipulation" alt="plot of chunk raster_manipulation" width="612" style="display: block; margin: auto;" />
 
-#### 3.6 reclassify raster layer     
-to a binary layer: areas that are higher than 100 va. areas that are lower than 100
+## 3.6 Reclassify raster layer     
+Reclassify as a binary layer: areas that are higher than 100 va. areas that are lower than 100
 
 ~~~
 myLayer<- raster("data/bioclim/bio1.bil")
@@ -219,7 +218,7 @@ plot(binaryMap)
 
 <img src="../fig/rmd-reclassify_raster1-1.png" title="plot of chunk reclassify_raster1" alt="plot of chunk reclassify_raster1" width="612" style="display: block; margin: auto;" />
 
-based on many threholds
+Use multiple threholds to reclassify
 
 ~~~
 # values smaller than 0 becomes 0; 
@@ -238,7 +237,7 @@ plot(myLayer_classified)
 
 <img src="../fig/rmd-reclassify_raster2-1.png" title="plot of chunk reclassify_raster2" alt="plot of chunk reclassify_raster2" width="612" style="display: block; margin: auto;" />
 
-#### 3.7 raster calculation    
+## 3.7 Raster calculation    
 
 
 ~~~
@@ -265,7 +264,7 @@ plot(layers_to_plot)
 
 <img src="../fig/rmd-raster_calculation-1.png" title="plot of chunk raster_calculation" alt="plot of chunk raster_calculation" width="612" style="display: block; margin: auto;" />
 
-#### 3.8  correlations between layers   
+## 3.8  Correlations between layers   
 
 ~~~
 # search files with *.bil* file extension
@@ -286,10 +285,10 @@ raster::pairs(clim_subset,maxpixels=1000) # the default is maxpixels=100000
 
 
 > ## Challenge: download and process worldclim data  
-> download worldclim_V1.4 10m resolution bioclimatic layers   
-> read BIO5 (Max Temperature of Warmest Month) & BIO6 (Min Temperature of Coldest Month)   
-> calculate the `difference` between the two layers  
-> save the `difference` as `difference.tiff` in folder `temp`  
+> --download worldclim_V1.4 10m resolution bioclimatic layers   
+> --read BIO5 (Max Temperature of Warmest Month) & BIO6 (Min Temperature of Coldest Month)   
+> --calculate the `difference` between the two layers  
+> --save the `difference` as `difference.tiff` in folder `temp`  
 > > ## Solution
 > > 
 > > ~~~

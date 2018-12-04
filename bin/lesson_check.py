@@ -29,15 +29,15 @@ SOURCE_RMD_DIRS = ['_episodes_rmd']
 # specially. This list must include all the Markdown files listed in the
 # 'bin/initialize' script.
 REQUIRED_FILES = {
-    '%/CODE_OF_CONDUCT.md': True,
+    '%/CODE_OF_CONDUCT.md': False,
     '%/CONTRIBUTING.md': False,
-    '%/LICENSE.md': True,
+    '%/LICENSE.md': False,
     '%/README.md': False,
-    '%/_extras/discuss.md': True,
-    '%/_extras/guide.md': True,
+    '%/_extras/discuss.md': False,
+    '%/_extras/guide.md': False,
     '%/index.md': True,
-    '%/reference.md': True,
-    '%/setup.md': True,
+    '%/reference.md': False,
+    '%/setup.md': False,
 }
 
 # Episode filename pattern.

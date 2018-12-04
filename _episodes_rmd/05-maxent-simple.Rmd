@@ -1,13 +1,18 @@
 ---
 source: Rmd
-title: "Maxent model - test run"
-teaching: 10
-exercises: 5
+title: "A simple modeling workflow"
+teaching: 20
+exercises: 20
 questions:
-- "How to re-format data for Maxent"
+- "be familar with the workflow"
+
 objectives:
-- "format data input for Maxent"
-- "simple run"
+- "re-format data for model input"
+- "view the model"
+- "predict function"
+- "model evaluation"
+- "thresholds"
+
 keypoints:
 - "111111"
 - "22222"
@@ -17,9 +22,7 @@ keypoints:
 source("../bin/chunk-options.R")
 ```
 
-## 5 Maxent model - test run  
-
-#### 5.0 prepare occ & raster 
+## 5.0 Prepare occ & raster 
 ```{r occraster1, message=FALSE, warning=FALSE}
 library("raster")
 library("dismo")
@@ -53,7 +56,7 @@ clim_mask <- mask(clim, occ_buffer)
 ```
 
 
-#### 5.1 re-format data input for Maxent
+## 5.1 Re-format data input for Maxent
 The data input can either be **spatial (i.e. spatial points + rasters)** or ***tabular (data frame)**.   
 Here is an example of using spatial data:
 ```{r prepare_data_for_maxent2,message=FALSE}
@@ -119,14 +122,12 @@ mod <- maxent(x=myPredictors,p=myResponse)
 
 ```
 
-
-#### 5.2 view the model
-
+## 5.2 View the model
 ```{r simple_maxent_model2, warning=FALSE}
 mod@lambdas
 ```
 
-#### 5.3 Predict function
+## 5.3 Predict function
 Running Maxent in R will not automatically make a projection to the data layers, unless you specify this using the parameter *projectionlayers*. However, we could make projections (to dataframes or raster layers) post hoc using the `predict()` function.
 
 project model on raster layers (training layers)  
@@ -149,7 +150,7 @@ ped3 <- predict(mod,env_occ_train)
 head(ped3)
 ```
 
-#### 5.4 Model evaluation
+## 5.4 Model evaluation
 To evaluate models, we use the `evaluate()` function from the `dismo` package. Evaluation indices include AUC, TSS, Sensitivity, Specificity, etc.
 
 Model evaluation, where `p` & `a` are **dataframes** (environmental conditions for presences and background points)  
@@ -177,7 +178,7 @@ cat( "the testing AUC is: ", mod_eval_test@auc  ,"\n" )
 ```		
 
 
-#### 5.5 thresholds   
+## 5.5 Thresholds   
 To threshold our continuous predictions of suitability into binary predictions we use the threshold function of the "dismo" package. To plot the binary prediction, we plot the predictions that are larger than the threshold.  
 
 Here we use `threshold()` function to obtain particular thresholds based on evaluation results from the previous step.
@@ -193,14 +194,14 @@ plot(ped1>=thd1)
 
 
 > ## Challenge: train a Maxent model with dataframe as input, calculate the AUC  
-> load occurrences & raster layers   
-> build a `xxx meter` buffer around occurrences    
-> `mask` raster by the buffer of occurrences   
-> generate random samples from the masked raster using `sampleRandom()`  
-> `extract()` environmental conditions from raster by points  
-> re-format the environmental conditions as input for maxent  
-> train a `maxent` model  
-> `evaluate()` the model with testing environmental conditions  
+> --load occurrences & raster layers   
+> --build a `xxx meter` buffer around occurrences    
+> --`mask` raster by the buffer of occurrences   
+> --generate random samples from the masked raster using `sampleRandom()`  
+> --`extract()` environmental conditions from raster by points  
+> --re-format the environmental conditions as input for maxent  
+> --train a `maxent` model  
+> --`evaluate()` the model with testing environmental conditions  
 > > ## Solution
 > > ```{r, echo=TRUE,eval=FALSE}
 > > library("raster")

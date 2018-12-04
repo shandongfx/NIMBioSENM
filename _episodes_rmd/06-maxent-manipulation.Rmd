@@ -1,13 +1,20 @@
 ---
 source: Rmd
-title: "Maxent model - manipulations"
-teaching: 10
-exercises: 5
+title: "Model manipulations"
+teaching: 20
+exercises: 20
 questions:
-- "How to change parameters for Maxent?"
+- "control your model"
+
 objectives:
-- "format data input for Maxent"
-- "simple run"
+- "change output path"
+- "change default parameters"
+- "select features"
+- "change beta-multiplier"
+- "specify projection layers"
+- "clamping function"
+- "an experiment of high AUC model"
+
 keypoints:
 - "111111"
 - "22222"
@@ -17,9 +24,7 @@ keypoints:
 source("../bin/chunk-options.R")
 ```
 
-##  6 Maxent model - manipulations   
-
-#### 6.0 prepare occ & raster, re-format the data for maxent  
+## 6.0 prepare occ & raster, re-format the data for maxent  
 ```{r prepare data maxent2, message=FALSE, warning=FALSE}
 library("raster")
 library("dismo")
@@ -90,7 +95,7 @@ myResponse <- c(rep(1,nrow(env_occ_train)),
 #                     p=myResponse)   ## 1:presence or 0:absence
 ```
 
-#### 6.1 set output path  
+## 6.1 Change output path  
 ```{r simple_maxent_model2, warning=FALSE,message=FALSE}
 dir.create("output")
 dir.create("output/maxent_output")
@@ -107,13 +112,16 @@ mod <- dismo::maxent(x=myPredictors, ## env conditions
 list.files( paste0(getwd(),"/output/maxent_outputs" )  )
 ```
 
-#### 6.2 change default settings   
+## 6.2 Change default parameters   
 
 To run the model without using the default setting, we must define Maxent parameters. To do this we will load a function that will facilitate us to change model parameters.   
 
 Here, we first load a function called `prepPara()`from Github, using `source_url()` function from `devtools` package.  
 ```{r detailed_parameters,warning=F,message=FALSE}
 # load the function that prepares parameters for maxent
+if(!require(devtools)){
+    install.packages("devtools")
+}
 devtools::source_url("https://raw.githubusercontent.com/shandongfx/nimbios_enm/master/Appendix2_prepPara.R")
 
 # get a list of default settings
@@ -129,7 +137,7 @@ mod <- dismo::maxent(x=myPredictors, ## env conditions
                      args=myparameters  )
 ```
 
-#### 6.2 Select features  
+## 6.2 Select features  
 We can also select different features other than **auto feature**. Options are `L-linear, Q-Quadratic, H-Hinge, P-Product, T-Threshold`.  
 For example, here we select Linear and Quadratic.  
 `prepPara(userfeatures="LQ")`
@@ -142,7 +150,7 @@ mod1_lq <- maxent(x=myPredictors[c("bio1","bio4","bio11")],
                   args=myparameters1 )
 ```
 
-#### 6.3 Change beta-multiplier  
+## 6.3 Change beta-multiplier  
 
 The beta-multiplier can be used to restrict or constrain the data to prevent model over-fitting; the default setting in Maxent is 1. `Smaller` values will `constrain` the model more, whereas `larger` numbers will `relax` the model, making it "smoother".  
 
@@ -198,7 +206,7 @@ mod2_complex <- maxent(x=myPredictors[c("bio1","bio4","bio11")],
 
 ```
 
-#### 6.3 Specify projection layers  
+## 6.3 Specify projection layers  
 Earlier we created a model, and then created a prediction from that model, but here we want to train the model and create a prediction simultaneously (like what happens in Maxent user interface).  
 
 ```{r specify_projection_layers1}
@@ -250,11 +258,11 @@ ped_relax   <- raster(paste0(getwd(),"/output/maxent_outputs3_prj_relax/species_
 plot(stack(ped_default,ped_relax))
 ```
 
-#### 6.4 Clamping function  
+## 6.4 Clamping function  
 
 When we project across space and time, we can come across conditions that are outside the range represented by the training data. Thus, we can clamp the response so that the model does not try to extapolate to these "extreme" conditions.  
 The response curve can vary, with turning on or off clamping.  
-~![]({{ page.root }}/fig/clampexample.png).   
+![]({{ page.root }}/fig/clampexample.png).   
 
 ```{r clamping_function}
 # enable or disable clamping function; note that clamping function is involved when projecting. Turning the clamping function on, gives the response value associated with the marginal value at the edge of the data
@@ -287,7 +295,7 @@ ped_noclamp <- raster(paste0(getwd(),"/output/maxent_outputs4_noclamp/species_bi
 plot(ped_clamp - ped_noclamp) # we may notice small differences, especially clamp shows higher predictions in most areas.
 ```
 
-#### 6.4 experiment of "high AUC" model  
+## 6.5 Do an experiment of "high AUC" model  
 Here we simulate two size of training areas (large vs. small)
 ```{r experiment}
 occ_buffer <- buffer(occ_final,width=4*10^5) #unit is meter
@@ -303,8 +311,8 @@ bg_big <- sampleRandom(x=clim,
                    na.rm=T, #removes the 'Not Applicable' points  
                    sp=T) # return spatial points 
 plot(clim[[1]])
-points(bg_big,col="black",cex=0.3)
-points(bg_small,col="blue",cex=0.3)
+points(bg_big,col="black",cex=0.5)
+points(bg_small,col="red",cex=0.5)
 ```
 
 ```{r experiment continue,message=F}
@@ -363,17 +371,17 @@ cat("AUC of big   training area is: ",mod_eval_big@auc )
 ```
 
 > ## Challenge: train two maxent models with different parameters, and compare the predictions     
-> load occurrences & raster layers   
-> build a `xxx meter` buffer around occurrences    
-> `mask` raster by the buffer of occurrences   
-> generate random samples from the masked raster using `sampleRandom()`  
-> `extract()` environmental conditions from raster by points  
-> re-format the environmental conditions as input for maxent  
-> train a `maxent` model  with different paremeters
-> use `devtools::source_url()` to load `prepPara()` function
-> use `prepPara()` function to set different features or beta-multiplier
-> use `prepPara()` function to set projection layers
-> `evaluate()` the model with testing environmental conditions  
+> --load occurrences & raster layers   
+> --build a `xxx meter` buffer around occurrences     
+> --`mask` raster by the buffer of occurrences    
+> --generate random samples from the masked raster using `sampleRandom()`   
+> --`extract()` environmental conditions from raster by points   
+> --re-format the environmental conditions as input for maxent   
+> --train a `maxent` model  with different paremeters  
+> --use `devtools::source_url()` to load `prepPara()` function  
+> --use `prepPara()` function to set different features or beta-multiplier  
+> --use `prepPara()` function to set projection layers  
+> --`evaluate()` the model with testing environmental conditions  
 > > ## Solution
 > > ```{r, echo=TRUE,eval=FALSE}
 > > library("raster")
@@ -440,6 +448,11 @@ cat("AUC of big   training area is: ",mod_eval_big@auc )
 > > myResponse <- c(rep(1,nrow(env_occ_train)),
 > >                 rep(0,nrow(env_bg))) 
 > > 
+> > if(!require(devtools)){
+> >     install.packages("devtools")
+> > }
+> > devtools::source_url("https://raw.githubusercontent.com/shandongfx/nimbios_enm/master/Appendix2_prepPara.R")
+
 > > # training a maxent model with parameters
 > > myparameters1 <- prepPara(userfeatures="LQ",  
 > >                           betamultiplier=0.01,

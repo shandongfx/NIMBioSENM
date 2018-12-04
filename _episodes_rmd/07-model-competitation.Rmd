@@ -1,13 +1,19 @@
 ---
 source: Rmd
-title: "Maxent model - model competitation"
-teaching: 10
-exercises: 5
+title: "Model competitation"
+teaching: 20
+exercises: 20
 questions:
-- "How to run a lot of model simulations?"
+- "runnnnnnnn models"
 objectives:
-- "addddddddddd"
-- "addddddddddd"
+- "prepare data input for ENMeval"
+- "parameter manipulations in ENMeval"  
+- "exploration of the results"  
+- "view model predictions"   
+- "overview of model performances" 
+- "model complexicility vs. model performances"  
+- "different ways of data seperation"  
+
 keypoints:
 - "111111"
 - "22222"
@@ -17,7 +23,7 @@ keypoints:
 source("../bin/chunk-options.R")
 ```
 
-#### prepare data
+## 7.0 Prepare data
 ```{r prepare data maxent3, message=FALSE, warning=FALSE}
 ###############################################################
 library("raster")
@@ -63,7 +69,7 @@ temp1 <- extract(clim_mask[[1]],occ_final)
 occ_final <- occ_final[!is.na(temp1),]
 ```
 
-#### prepare data input for ENMeval  
+## 7.1 Prepare data input for **ENMeval**  
 Before we start, we could increase the RAM allocated to the Java virtual machine.  
 `options(java.parameters = "-Xmx1g" )`  
 
@@ -79,7 +85,7 @@ occ_coord <- occ_final@coords
 bg_coord <- bg@coords
 ```
 
-#### parameter manipulations in ENMeval  
+## 7.2 Parameter manipulations in ENMeval  
 We use `RMvalues()` to set a range of *RM values* (beta-multiplier). Here we set RM ranged from *0.5* to *4* at at the interval of *0.5*.  
 We can set feature using *fc* (for example, fc = c('L', 'LQ', 'H')).    
 
@@ -99,7 +105,7 @@ competition <- ENMevaluate(occ = occ_coord,          # set the occurrence data f
 
 
 
-#### Exploration the results.  
+## 7.3 Exploration of the results  
 ```{r enmeval3,message=F,warning=F}
 dir.create("temp")
 # Look at results table AND save it in working directory for later checking.
@@ -114,12 +120,12 @@ aicmods <- which(competition@results$delta.AICc < 10)
 competition@results[aicmods,]
 ```
 
-#### View model predictions (maps).  
+## 7.4 View model predictions   
 ```{r enmeval5}
 plot(competition@predictions[[aicmods]])
 ```
 
-#### Overview of model performances  
+## 7.5 Overview of model performances  
 Plot delta.AICc for different settings that we selected in ENMeval   
 ```{r enmeval6,fig.width=6}
 par(mfrow=c(2,2))
@@ -129,7 +135,7 @@ eval.plot(competition@results,   'avg.test.or10pct')
 eval.plot(competition@results, 'avg.test.orMTP')
 ```
 
-#### Model complexicility vs. model performances  
+## 7.6 Model complexicility vs. model performances  
 There are many fancy approaches to explore the original output of ENMeval(i.e. Myresults.csv), here deltAIC was plotted against meanAUC across diverse model setting, both these metrics can be used to measure model complexity, in this figure, the more down left of "point" position, the more less complex model setting represents.  
 ```{r enmeval7}
 plot(competition@results$avg.test.AUC, 
@@ -141,7 +147,7 @@ mtext("Circle size proportional to regularization multiplier value")
 ```
 
 
-#### Different ways of data seperation.  
+## 7.7 Different ways of data seperation  
 ~![]({{ page.root }}/fig/enmeval1.png)    
 ```{r enmeval9,eval=F}
 #T Viscualize a data parition with the Checkerboard1 method
@@ -179,15 +185,14 @@ competition <- ENMevaluate(occ = occ_coord,          # set the occurrence data f
                            )
 ```
 
-
 > ## Challenge: use "block" and "checkerboard1" methods to spatial parting occurrence records, manipulate the RMvalues () parameter, and compare the models  
-> load occurrences & raster layers   
-> build a `xxx meter` buffer around occurrences    
-> `mask` raster by the buffer of occurrences   
-> generate random samples from the masked raster using `sampleRandom()`  
-> prepare the **coordinates** of occurrences and background points  
-> revise the parameters of `ENMevaluate()`: **RMvalues**, **method**.
-> look at **results** and **predictions**   
+> --load occurrences & raster layers   
+> --build a `xxx meter` buffer around occurrences    
+> --`mask` raster by the buffer of occurrences   
+> --generate random samples from the masked raster using `sampleRandom()`  
+> --prepare the **coordinates** of occurrences and background points  
+> --revise the parameters of `ENMevaluate()`: **RMvalues**, **method**.
+> --look at **results** and **predictions**   
 > > ## Solution
 > > ```{r, echo=TRUE,eval=FALSE}
 > > library("raster")
@@ -195,6 +200,7 @@ competition <- ENMevaluate(occ = occ_coord,          # set the occurrence data f
 > > library("ENMeval")
 > > 
 > > # prepare spatial occ data
+> > dir.create("data")
 > > if(!file.exists("data/occ_raw.rdata")){
 > >   occ_raw <- gbif(genus="Dasypus",species="novemcinctus",download=TRUE) 
 > >   save(occ_raw,file = "data/occ_raw.rdata")
@@ -210,6 +216,7 @@ competition <- ENMevaluate(occ = occ_coord,          # set the occurrence data f
 > > crs(occ_final) <- myCRS1
 > > 
 > > # prepare raster data
+> > dir.create("data/bioclim")
 > > if( !file.exists( paste0("data/bioclim/bio_10m_bil.zip")   )){
 > >   utils::download.file(url="http://biogeo.ucdavis.edu/data/climate/worldclim/1_4/grid/cur/bio_10m_bil.zip",
 > >                        destfile="data/bioclim/bio_10m_bil.zip"   ) 

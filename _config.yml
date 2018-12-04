@@ -14,7 +14,7 @@ title: "NIMBioS tutorial: ENM in R"
 
 # Life cycle stage of the lesson
 # possible values: "pre-alpha", "alpha", "beta", "stable"
-life_cycle: "pre-alpha"
+life_cycle: "stable"
 
 #------------------------------------------------------------
 # Generic settings (should not need to change).
@@ -29,7 +29,7 @@ kind: "workshop"
 repository: <USERNAME>/<PROJECT>
 
 # Email address, no mailto:
-email: "team@carpentries.org"
+email: "fengxiao@email.arizona.edu"
 
 # Sites.
 amy_site: "https://amy.software-carpentry.org/workshops"

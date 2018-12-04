@@ -3,23 +3,20 @@
 {% endcomment %}
 <footer>
   <div class="row">
-    <div class="col-md-6" align="left">
-      <h4>
-	Copyright &copy; 2016–{{ 'now' | date: "%Y" }}
-	{% if site.carpentry == "swc" %}
-	<a href="{{ site.swc_site }}">Software Carpentry</a>
-	{% elsif site.carpentry == "dc" %}
-	<a href="{{ site.dc_site }}">Data Carpentry</a>
-	{% elsif site.carpentry == "lc" %}
-	<a href="{{ site.lc_site }}">Library Carpentry</a>
-	{% elsif site.carpentry == "cp" %}
-	<a href="{{ site.carpentries_site }}">The Carpentries</a>
-	{% endif %}
-      </h4>
+    <div class="col-md-16" align="left">
+      <h6>
+The material is adapted from Feng, X, F Gebresenbet and C Walker. 2017 Shifting from closed-source graphical-interface to open-source programming environment: a brief tutorial on running Maxent in R. PeerJ Preprints, 10.7287/peerj.preprints.3346v1;
+      </h6>
+      <h6>
+The material is improved by Gengping Zhu & Luis Escobar ;
+      </h6>
+       <h6>
+The website is adapted from Software Carpentry.
+      </h6>
     </div>
     <div class="col-md-6" align="right">
       <h4>
-	<a href="mailto:{{ site.email }}">Contact The Carpentries</a>
+
       </h4>
     </div>
   </div>

@@ -1,9 +1,9 @@
-Tue Dec 04 01:56:41 EST 2018
+Tue Dec 04 16:34:53 EST 2018
 MaxEnt version 3.3.3k
 Reading file absence
-readGrid: max memory 477626368, total allocated 257425408, free 241317088, used 16108320, increment 16108320
+readGrid: max memory 477626368, total allocated 257425408, free 241227104, used 16198304, increment 16198304
 Reading samples from presence
-Read samples: max memory 477626368, total allocated 257425408, free 229237216, used 28188192, increment 12079872
+Read samples: max memory 477626368, total allocated 257425408, free 229147408, used 28278000, increment 12079696
 Adding samples to background in feature space
 Command line used:  autorun -e /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs/absence -o /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs -s /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs/presence -z
 Command line to repeat: java density.MaxEnt nowarnings noprefixes outputdirectory=/Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs samplesfile=/Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs/presence environmentallayers=/Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs/absence autorun novisible
@@ -16,21 +16,21 @@ environmentallayers: /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_output
 autorun: true
 visible: false
 
-getSamples: max memory 477626368, total allocated 257425408, free 225210464, used 32214944, increment 4026752
+getSamples: max memory 477626368, total allocated 257425408, free 225120784, used 32304624, increment 4026624
 Making features
-makeFeatures: max memory 477626368, total allocated 257425408, free 221172576, used 36252832, increment 4037888
+makeFeatures: max memory 477626368, total allocated 257425408, free 221082696, used 36342712, increment 4038088
 species: 
 Regularization values: linear/quadratic/product: 0.050, categorical: 0.250, threshold: 1.000, hinge: 0.500
 303 samples
-Density: max memory 477626368, total allocated 257425408, free 214450320, used 42975088, increment 6722256
-linearPredictor: max memory 477626368, total allocated 257425408, free 214450320, used 42975088, increment 0
-FeaturedSpace: max memory 477626368, total allocated 257425408, free 214450320, used 42975088, increment 0
-Sequential: max memory 477626368, total allocated 257425408, free 214450320, used 42975088, increment 0
+Density: max memory 477626368, total allocated 257425408, free 214364688, used 43060720, increment 6718008
+linearPredictor: max memory 477626368, total allocated 257425408, free 214364688, used 43060720, increment 0
+FeaturedSpace: max memory 477626368, total allocated 257425408, free 214364688, used 43060720, increment 0
+Sequential: max memory 477626368, total allocated 257425408, free 214364688, used 43060720, increment 0
 Initial loss: 7.257002707092073
-Time since start: 2.815
-500: time = 2.471000 loss = 6.775989
+Time since start: 2.857
+500: time = 2.511000 loss = 6.775989
 Resulting gain: 0.4810134995970978
-Time since start: 4.027
+Time since start: 4.109
 Projecting...
 Writing file /Users/lablap/lesson_mac/_episodes_rmd/output/maxent_outputs/species.csv
 Ending

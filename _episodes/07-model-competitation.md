@@ -397,8 +397,8 @@ competition <- ENMevaluate(occ = occ_coord,          # set the occurrence data f
 > > bg_coord <- bg@coords
 > > 
 > > # run ENMeval using two method to spatial parting occurrence records#######
-> > results_bl <- ENMevaluate(occ, env, bg, RMvalues=seq(0.5,4,0.5),method='block')
-> > results_ch <- ENMevaluate(occ, env, bg, RMvalues=seq(0.5,4,0.5),method='checkerboard1')
+> > res_bl <- ENMevaluate(occ_coord, env, bg_coord, RMvalues=seq(0.5,4,0.5),method='block')
+> > res_ch <- ENMevaluate(occ_coord, env, bg_coord, RMvalues=seq(0.5,4,0.5),method='checkerboard1')
 > > 
 > > # Selecting settings gave delta.AICc < 2 in block method####
 > > aicmods1 <- which(res_bl@results$delta.AICc < 2)

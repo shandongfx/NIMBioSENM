@@ -188,7 +188,7 @@ Here we use `threshold()` function to obtain particular thresholds based on eval
 thd1 <- threshold(mod_eval_train,stat="no_omission") # 0% omission rate 
 thd2 <- threshold(mod_eval_train,stat="spec_sens") # highest TSS
 thd3 <- threshold(mod_eval_train,stat="sensitivity",sensitivity=0.9) # 10% omission rate, i.e. sensitivity=0.9
-thd4 <- threshold(mod_eval_train,stat="sensitivity",sensitivity=0.95) # 10% omission rate, i.e. sensitivity=0.9
+thd4 <- threshold(mod_eval_train,stat="sensitivity",sensitivity=0.95) # 5% omission rate, i.e. sensitivity=0.95
 
 # plotting points that are higher than the previously calculated thresholded value
 plot(ped1>=thd1) 
